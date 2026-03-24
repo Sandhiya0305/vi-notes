@@ -1,0 +1,106 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  background:
+    radial-gradient(circle at top left, rgba(255, 214, 153, 0.8), transparent 30%),
+    radial-gradient(circle at top right, rgba(113, 214, 255, 0.55), transparent 28%),
+    linear-gradient(180deg, #f4efe6 0%, #f8fafc 45%, #eef4ff 100%);
+  color: #111827;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, sans-serif;
+  color: #111827;
+  background-color: #f9fafb;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 32px;
+  color: #111827;
+}
+
+.hero {
+  max-width: 1120px;
+  margin: 0 auto 24px;
+  padding: 28px 32px;
+  border: 1px solid rgba(20, 32, 51, 0.08);
+  border-radius: 28px;
+  background: rgba(230, 139, 139, 0.72);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 22px 60px rgba(46, 84, 135, 0.12);
+}
+
+.hero h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(2rem, 3vw, 3.6rem);
+  line-height: 1.05;
+}
+
+.hero-copy {
+  max-width: 760px;
+  margin: 0;
+  color: #111827;
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.74rem;
+  color: #b65f26;
+  font-weight: 700;
+}
+
+.app-grid {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.workspace-column,
+.sidebar-column,
+.report-slot {
+  display: grid;
+  gap: 24px;
+}
+
+.error-banner {
+  max-width: 1120px;
+  margin: 18px auto 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #b72631;
+  color: #f9fafb;
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    padding: 18px;
+  }
+
+  .app-grid {
+    grid-template-columns: 1fr;
+  }
+}

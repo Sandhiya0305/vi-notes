@@ -1,0 +1,24 @@
+{
+  "name": "vi-notes",
+  "version": "1.0.0",
+  "description": "AI Authorship Verification Platform",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client",
+    "electron"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w server & npm run dev -w client",
+    "build": "npm run build -w server && npm run build -w client",
+    "start": "npm start -w server",
+    "test": "npm test -w server && npm test -w client"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "electron": "^41.0.3",
+    "electron-is-dev": "^3.0.1"
+  }
+}
