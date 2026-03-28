@@ -1,9 +1,9 @@
 .dashboard-shell {
   padding: 22px;
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(20, 32, 51, 0.08);
-  box-shadow: 0 18px 48px rgba(46, 84, 135, 0.12);
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
 .dashboard-header {
@@ -28,13 +28,14 @@
 }
 
 .dashboard-refresh {
-  background: #17345c;
-  color: #f9fafb;
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db;
 }
 
 .dashboard-empty {
   margin: 0;
-  color: #60718c;
+  color: #6b7280;
 }
 
 .session-list {
@@ -45,8 +46,8 @@
 .session-card {
   padding: 16px;
   border-radius: 20px;
-  background: #fbfcff;
-  border: 1px solid #d7dfec;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
@@ -54,8 +55,8 @@
 .session-card:hover,
 .session-card.selected {
   transform: translateY(-2px);
-  border-color: #7398d4;
-  box-shadow: 0 14px 28px rgba(63, 91, 139, 0.12);
+  border-color: #9ca3af;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
 .session-card-top {
@@ -70,26 +71,28 @@
   display: inline-flex;
   padding: 6px 10px;
   border-radius: 999px;
-  background: #e8effb;
-  color: #2f5488;
+  background: #f9fafb;
+  color: #374151;
+  border: 1px solid #d1d5db;
   font-size: 0.8rem;
   font-weight: 700;
 }
 
 .session-delete {
-  background: #f7d9da;
-  color: #8c1f2e;
+  background: #ffffff;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
 }
 
 .session-preview {
   margin: 0 0 14px;
-  color: #20304c;
+  color: #111827;
 }
 
 .session-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  color: #677991;
+  color: #6b7280;
   font-size: 0.82rem;
 }

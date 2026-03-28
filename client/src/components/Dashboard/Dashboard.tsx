@@ -37,8 +37,8 @@ export default function Dashboard({
     <section className="dashboard-shell">
       <div className="dashboard-header">
         <div>
-          <p className="eyebrow">Dashboard</p>
-          <h2>Recorded writing sessions</h2>
+          <p className="eyebrow">Sessions</p>
+          <h2>Saved writing sessions</h2>
         </div>
         <button className="dashboard-refresh" onClick={onRefresh} type="button">
           Refresh
