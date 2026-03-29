@@ -11,9 +11,9 @@ function getWordCount(text: string): number {
   return text.trim() ? text.trim().split(/\s+/).length : 0;
 }
 
-function countWords(text: string): number {
-  return text.trim() ? text.trim().split(/\s+/).length : 0;
-}
+// function countWords(text: string): number {
+//   return text.trim() ? text.trim().split(/\s+/).length : 0;
+// }
 
 function getAverageInterval(keystrokes: KeystrokeEvent[]): number {
   if (keystrokes.length === 0) {
@@ -119,8 +119,8 @@ export function analyzeSessionBehavior(session: Pick<WritingSession, '_id' | 'do
   const wordCount = getWordCount(session.documentSnapshot);
   const documentLength = Math.max(session.documentSnapshot.length, 1);
 
-  const totalPastedWords = session.pastes.reduce((sum, paste) => sum + countWords(paste.insertedText), 0);
-  const hasLongPasteEvent = session.pastes.some((paste) => countWords(paste.insertedText) >= 10);
+  const totalPastedWords = session.pastes.reduce((sum, paste) => sum + getWordCount(paste.insertedText), 0);
+  const hasLongPasteEvent = session.pastes.some((paste) => getWordCount(paste.insertedText) >= 10);
 
   // New behavioral metrics
   const pauseBeforeSentences = getPauseBeforeSentences(session.keystrokes, session.documentSnapshot);
