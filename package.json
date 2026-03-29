@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "dev": "npm run dev -w server & npm run dev -w client",
+    "dev:site": "node scripts/dev-open.js",
     "build": "npm run build -w server && npm run build -w client",
     "start": "npm start -w server",
     "test": "npm test -w server && npm test -w client"

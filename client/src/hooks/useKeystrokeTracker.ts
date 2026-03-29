@@ -64,16 +64,10 @@ export default function useKeystrokeTracker(): KeystrokeTracker {
   const sessionStartedAtRef = useRef<number | null>(null);
   const pausedDurationRef = useRef(0);
   const blurStartedAtRef = useRef<number | null>(null);
+  const typingActiveMsRef = useRef(0);
   const previousContentRef = useRef('');
 
-  const updateDuration = (now = Date.now()) => {
-    if (!sessionStartedAtRef.current) {
-      return 0;
-    }
-
-    const activeDuration = now - sessionStartedAtRef.current - pausedDurationRef.current;
-    return Math.max(activeDuration, 0);
-  };
+  const updateDuration = () => Math.max(typingActiveMsRef.current, 0);
 
   const handleFocus = () => {
     const now = Date.now();
@@ -90,7 +84,7 @@ export default function useKeystrokeTracker(): KeystrokeTracker {
     setIsTracking(true);
     setState((current) => ({
       ...current,
-      sessionDurationMs: updateDuration(now),
+      sessionDurationMs: updateDuration(),
     }));
   };
 
@@ -111,6 +105,8 @@ export default function useKeystrokeTracker(): KeystrokeTracker {
     const now = Date.now();
     const intervalMs = lastKeyTimestampRef.current ? now - lastKeyTimestampRef.current : 0;
     lastKeyTimestampRef.current = now;
+    const effectiveInterval = intervalMs > 2000 ? 0 : intervalMs;
+    typingActiveMsRef.current += effectiveInterval;
     const safeKey = typeof event?.key === 'string' ? event.key : '';
 
     const keystroke: KeystrokeEvent = {
@@ -124,7 +120,7 @@ export default function useKeystrokeTracker(): KeystrokeTracker {
     setState((current) => ({
       ...current,
       keystrokes: [...current.keystrokes, keystroke],
-      sessionDurationMs: updateDuration(now),
+      sessionDurationMs: updateDuration(),
     }));
   };
 
@@ -145,7 +141,7 @@ export default function useKeystrokeTracker(): KeystrokeTracker {
     setState((current) => ({
       ...current,
       pastes: [...current.pastes, paste],
-      sessionDurationMs: updateDuration(now),
+      sessionDurationMs: updateDuration(),
     }));
   };
 
@@ -199,7 +195,7 @@ export default function useKeystrokeTracker(): KeystrokeTracker {
     setState((current) => ({
       ...current,
       edits: edit ? [...current.edits, edit] : current.edits,
-      sessionDurationMs: updateDuration(now),
+      sessionDurationMs: updateDuration(),
     }));
   };
 

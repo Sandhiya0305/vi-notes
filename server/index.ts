@@ -1,11 +1,13 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { type NextFunction, type Request, type Response } from 'express';
+import path from 'path';
 import mongoose from 'mongoose';
 import analysisRouter from './routes/analysis';
 import sessionsRouter from './routes/sessions';
 
-dotenv.config();
+const envPath = path.resolve(__dirname, '../.env');
+dotenv.config({ path: envPath, override: true });
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -35,9 +37,29 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 async function startServer(): Promise<void> {
-  await mongoose.connect(mongoUri);
+  try {
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
+    });
+    console.log(`✓ Connected to MongoDB`);
+  } catch (mongoError) {
+    console.error('❌ MongoDB connection failed');
+    console.error(`   Tried: ${mongoUri.substring(0, 60)}...`);
+    if (mongoError instanceof Error) {
+      console.error(`   Error: ${mongoError.message}`);
+    }
+    console.error('\n⚠️  Troubleshooting:');
+    console.error('   1. Check MONGODB_URI in .env file');
+    console.error('   2. Verify MongoDB Atlas IP whitelist includes your IP');
+    console.error('   3. Check database credentials');
+    process.exit(1);
+  }
+
   app.listen(port, () => {
-    console.log(`Vi-Notes server listening on http://localhost:${port}`);
+    console.log(`✓ Vi-Notes server listening on http://localhost:${port}`);
+    console.log(`   API endpoint: http://localhost:${port}/api`);
+    console.log(`   Health check: http://localhost:${port}/health`);
   });
 }
 

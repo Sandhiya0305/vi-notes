@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import SessionModel from '../models/Session';
+import ReportExporter from '../services/reportExporter';
 import type { EndSessionRequest, StartSessionRequest, UpdateSessionRequest } from '../../types';
 
 const router = Router();
@@ -141,6 +142,65 @@ router.delete('/:id', async (req, res, next) => {
     }
 
     return res.json({ deletedSessionId: req.params.id });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Export endpoints
+router.get('/:id/export/:format', async (req, res, next) => {
+  try {
+    const session = await SessionModel.findById(req.params.id);
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (!session.analysis) {
+      return res.status(400).json({ error: 'Session analysis not yet performed. Run /api/analysis/:sessionId first.' });
+    }
+
+    const format = (req.params.format as 'json' | 'html' | 'text') || 'html';
+    if (!['json', 'html', 'text'].includes(format)) {
+      return res.status(400).json({ error: 'Invalid format. Use: json, html, or text' });
+    }
+
+    const exporter = new ReportExporter();
+    const exported = exporter.export(session.analysis, format);
+
+    res.setHeader('Content-Type', exported.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${exported.filename}"`);
+    res.send(exported.content);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Generate shareable token
+router.get('/:id/share-token', async (req, res, next) => {
+  try {
+    const session = await SessionModel.findById(req.params.id);
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (!session.analysis) {
+      return res.status(400).json({ error: 'Session analysis not yet performed.' });
+    }
+
+    const exporter = new ReportExporter();
+    const token = exporter.generateShareableToken(session.analysis);
+
+    return res.json({
+      token,
+      shareUrl: `/share/${token}`,
+      reportSummary: {
+        verdict: session.analysis.verdict,
+        confidence: session.analysis.confidenceScore,
+        suspicion: session.analysis.overallSuspicionScore,
+      },
+    });
   } catch (error) {
     return next(error);
   }

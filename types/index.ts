@@ -34,12 +34,42 @@ export interface EditEvent {
   documentLength: number;
 }
 
+export interface SuspiciousSegment {
+  text: string;
+  startIndex: number;
+  endIndex: number;
+  reason: string;
+  suspicionLevel: 'low' | 'medium' | 'high';
+}
+
+export interface TextStatisticsMetrics {
+  wordCount: number;
+  averageWordLength: number;
+  sentenceCount: number;
+  sentenceLengthVariation: number;
+  lexicalDiversity: number;
+  lexicalRichness: number;
+  linguisticIrregularities: string[];
+}
+
+export interface BehavioralMetrics {
+  typingVariance: number;
+  averageIntervalMs: number;
+  pauseBeforeSentences: number[];
+  microPausesNearPunctuation: number[];
+  contextAwarePausePattern: string;
+  pasteRatio: number;
+  editRatio: number;
+}
+
 export interface AnalysisMetrics {
   typingVariance: number;
   averageIntervalMs: number;
   pasteRatio: number;
   editRatio: number;
   wordCount: number;
+  textStatistics?: TextStatisticsMetrics;
+  behavioral?: BehavioralMetrics;
 }
 
 export interface AuthenticityReport {
@@ -51,6 +81,9 @@ export interface AuthenticityReport {
   naturalnessScore: number;
   reasons: string[];
   metrics: AnalysisMetrics;
+  suspiciousSegments?: SuspiciousSegment[];
+  correlationFindings?: string[];
+  exportFormat?: 'json' | 'pdf' | 'html';
 }
 
 export interface WritingSession {

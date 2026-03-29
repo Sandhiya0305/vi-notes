@@ -205,22 +205,16 @@ npm install
 
 ## Run in Development
 
-Run the backend:
+Start both the backend and the frontend while automatically opening the client in your browser:
 
 ```bash
-npm run dev -w server
+npm run dev:site
 ```
 
-Run the frontend in a second terminal:
+The client runs at `http://localhost:5173`.
 
-```bash
-npm run dev -w client
-```
-
-Open:
-
-- Frontend: `http://localhost:5173`
-- Backend health check: `http://localhost:3001/health`
+If you want to start each workspace manually instead, run `npm run dev -w server` in one terminal and `npm run dev -w client` in another.
+The backend exposes a health check at `http://localhost:3001/health`.
 
 ## Build
 
