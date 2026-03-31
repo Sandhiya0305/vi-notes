@@ -4,7 +4,10 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import path from 'path';
 import mongoose from 'mongoose';
 import analysisRouter from './routes/analysis';
+import authRouter from './routes/auth';
+import reportsRouter from './routes/reports';
 import sessionsRouter from './routes/sessions';
+import { ensureSeededUsers } from './services/userSetup';
 
 const envPath = path.resolve(__dirname, '../.env');
 dotenv.config({ path: envPath, override: true });
@@ -25,8 +28,10 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'vi-notes-server' });
 });
 
+app.use('/api/auth', authRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/analysis', analysisRouter);
+app.use('/api/reports', reportsRouter);
 
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof Error) {
@@ -42,7 +47,8 @@ async function startServer(): Promise<void> {
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 10000,
     });
-    console.log(`✓ Connected to MongoDB`);
+    console.log('✔ Connected to MongoDB');
+    await ensureSeededUsers();
   } catch (mongoError) {
     console.error('❌ MongoDB connection failed');
     console.error(`   Tried: ${mongoUri.substring(0, 60)}...`);

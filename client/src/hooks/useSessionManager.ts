@@ -6,6 +6,7 @@ import type {
   UpdateSessionRequest,
   WritingSession,
 } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
@@ -47,6 +48,8 @@ function normalizeSessionsPayload(payload: unknown): WritingSession[] {
 }
 
 export default function useSessionManager() {
+  const { token } = useAuth();
+
   const [state, setState] = useState<SessionManagerState>({
     activeSessionId: null,
     sessions: [],
@@ -80,7 +83,10 @@ export default function useSessionManager() {
     try {
       const response = await fetch(`${API_BASE}/sessions/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ documentSnapshot }),
       });
 
@@ -110,7 +116,7 @@ export default function useSessionManager() {
       setState((current) => ({ ...current, isLoading: false, error: message }));
       throw error;
     }
-  }, []);
+  }, [token]);
 
   const buildDeltaPayload = (sessionId: string, payload: SyncPayload): UpdateSessionRequest => {
     const deltaPayload: UpdateSessionRequest = {
@@ -148,18 +154,22 @@ export default function useSessionManager() {
 
     const response = await fetch(`${API_BASE}/sessions/update`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(deltaPayload),
     });
 
     if (!response.ok) {
       throw new Error('Failed to update session');
     }
-  }, [state.activeSessionId]);
+  }, [state.activeSessionId, token]);
 
   const analyzeSession = useCallback(async (sessionId: string): Promise<AuthenticityReport> => {
     const response = await fetch(`${API_BASE}/analysis/${sessionId}`, {
       method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     });
 
     if (!response.ok) {
@@ -178,11 +188,13 @@ export default function useSessionManager() {
       currentReport: report,
     }));
     return report;
-  }, []);
+  }, [token]);
 
   const refreshSessions = useCallback(async (): Promise<WritingSession[]> => {
     try {
-      const response = await fetch(`${API_BASE}/sessions`);
+      const response = await fetch(`${API_BASE}/sessions`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
 
       if (!response.ok) {
         throw new Error('Failed to fetch sessions');
@@ -205,7 +217,7 @@ export default function useSessionManager() {
       }));
       return [];
     }
-  }, []);
+  }, [token]);
 
   const endSession = useCallback(async (payload: SyncPayload): Promise<WritingSession | null> => {
     if (!state.activeSessionId) {
@@ -224,7 +236,10 @@ export default function useSessionManager() {
 
       const response = await fetch(`${API_BASE}/sessions/end`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(requestBody),
       });
 
@@ -257,23 +272,29 @@ export default function useSessionManager() {
       setState((current) => ({ ...current, isLoading: false, error: message }));
       throw error;
     }
-  }, [analyzeSession, refreshSessions, state.activeSessionId]);
+  }, [analyzeSession, refreshSessions, state.activeSessionId, token]);
 
-  const deleteSession = useCallback(async (sessionId: string): Promise<void> => {
-    const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
-      method: 'DELETE',
-    });
+  const deleteSession = useCallback(
+    async (sessionId: string): Promise<void> => {
+      const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to delete session');
-    }
+      if (!response.ok) {
+        throw new Error('Failed to delete session');
+      }
 
-    setState((current) => ({
-      ...current,
-      sessions: current.sessions.filter((session) => session._id !== sessionId),
-      currentReport: current.currentReport?.sessionId === sessionId ? null : current.currentReport,
-    }));
-  }, []);
+      setState((current) => ({
+        ...current,
+        sessions: current.sessions.filter((session) => session._id !== sessionId),
+        currentReport: current.currentReport?.sessionId === sessionId ? null : current.currentReport,
+      }));
+    },
+    [token],
+  );
 
   return {
     ...state,

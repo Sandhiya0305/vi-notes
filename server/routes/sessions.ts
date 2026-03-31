@@ -1,15 +1,26 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { z } from 'zod';
-import SessionModel from '../models/Session';
 import ReportExporter from '../services/reportExporter';
+import SessionModel, { type SessionDocument } from '../models/Session';
 import type { EndSessionRequest, StartSessionRequest, UpdateSessionRequest } from '../../types';
+import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
 
 const router = Router();
+router.use(requireAuth);
 
 const keystrokeSchema = z.object({
   timestamp: z.number(),
   key: z.string(),
-  keyCategory: z.enum(['alpha', 'numeric', 'whitespace', 'punctuation', 'navigation', 'delete', 'modifier', 'special']),
+  keyCategory: z.enum([
+    'alpha',
+    'numeric',
+    'whitespace',
+    'punctuation',
+    'navigation',
+    'delete',
+    'modifier',
+    'special',
+  ]),
   intervalMs: z.number().min(0),
   documentLength: z.number().min(0),
 });
@@ -43,11 +54,44 @@ const updateSchema = z.object({
 
 const endSchema = updateSchema satisfies z.ZodType<EndSessionRequest>;
 
-router.post('/start', async (req, res, next) => {
+function ensureSessionAccess(
+  req: AuthenticatedRequest,
+  res: Response,
+  session: SessionDocument | null,
+): session is SessionDocument {
+  if (!session) {
+    res.status(404).json({ error: 'Session not found' });
+    return false;
+  }
+
+  if (!req.user) {
+    res.status(401).json({ error: 'Missing authentication context' });
+    return false;
+  }
+
+  if (req.user.role === 'admin') {
+    return true;
+  }
+
+  if (session.ownerId !== req.user.id) {
+    res.status(403).json({ error: 'Insufficient permissions to access this session' });
+    return false;
+  }
+
+  return true;
+}
+
+router.post('/start', async (req: AuthenticatedRequest, res, next) => {
   try {
     const body = startSchema.parse(req.body);
 
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
     const session = await SessionModel.create({
+      ownerId: req.user.id,
+      ownerEmail: req.user.email,
       documentSnapshot: body.documentSnapshot ?? '',
       keystrokes: [],
       pastes: [],
@@ -57,19 +101,19 @@ router.post('/start', async (req, res, next) => {
       analysis: null,
     });
 
-    res.status(201).json({ session: session.toJSON() });
+    return res.status(201).json({ session: session.toJSON() });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 });
 
-router.post('/update', async (req, res, next) => {
+router.post('/update', async (req: AuthenticatedRequest, res, next) => {
   try {
     const body = updateSchema.parse(req.body);
     const session = await SessionModel.findById(body.sessionId);
 
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+    if (!ensureSessionAccess(req, res, session)) {
+      return;
     }
 
     session.documentSnapshot = body.documentSnapshot;
@@ -86,13 +130,13 @@ router.post('/update', async (req, res, next) => {
   }
 });
 
-router.post('/end', async (req, res, next) => {
+router.post('/end', async (req: AuthenticatedRequest, res, next) => {
   try {
     const body = endSchema.parse(req.body);
     const session = await SessionModel.findById(body.sessionId);
 
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+    if (!ensureSessionAccess(req, res, session)) {
+      return;
     }
 
     session.documentSnapshot = body.documentSnapshot;
@@ -110,21 +154,24 @@ router.post('/end', async (req, res, next) => {
   }
 });
 
-router.get('/', async (_req, res, next) => {
+router.get('/', async (req: AuthenticatedRequest, res, next) => {
   try {
-    const sessions = await SessionModel.find().sort({ createdAt: -1 }).lean();
-    res.json(Array.isArray(sessions) ? sessions.map((session) => ({ ...session, _id: String(session._id) })) : []);
+    const query = req.user?.role === 'admin' ? {} : { ownerId: req.user?.id };
+    const sessions = await SessionModel.find(query).sort({ createdAt: -1 }).lean();
+    return res.json(
+      Array.isArray(sessions) ? sessions.map((session) => ({ ...session, _id: String(session._id) })) : [],
+    );
   } catch (error) {
-    next(error);
+    return next(error);
   }
 });
 
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', async (req: AuthenticatedRequest, res, next) => {
   try {
     const session = await SessionModel.findById(req.params.id);
 
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+    if (!ensureSessionAccess(req, res, session)) {
+      return;
     }
 
     return res.json({ session: session.toJSON() });
@@ -133,31 +180,33 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', async (req: AuthenticatedRequest, res, next) => {
   try {
-    const deleted = await SessionModel.findByIdAndDelete(req.params.id);
+    const session = await SessionModel.findById(req.params.id);
 
-    if (!deleted) {
-      return res.status(404).json({ error: 'Session not found' });
+    if (!ensureSessionAccess(req, res, session)) {
+      return;
     }
 
+    await session.deleteOne();
     return res.json({ deletedSessionId: req.params.id });
   } catch (error) {
     return next(error);
   }
 });
 
-// Export endpoints
-router.get('/:id/export/:format', async (req, res, next) => {
+router.get('/:id/export/:format', async (req: AuthenticatedRequest, res, next) => {
   try {
     const session = await SessionModel.findById(req.params.id);
 
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+    if (!ensureSessionAccess(req, res, session)) {
+      return;
     }
 
     if (!session.analysis) {
-      return res.status(400).json({ error: 'Session analysis not yet performed. Run /api/analysis/:sessionId first.' });
+      return res
+        .status(400)
+        .json({ error: 'Session analysis not yet performed. Run /api/analysis/:sessionId first.' });
     }
 
     const format = (req.params.format as 'json' | 'html' | 'text') || 'html';
@@ -170,19 +219,18 @@ router.get('/:id/export/:format', async (req, res, next) => {
 
     res.setHeader('Content-Type', exported.mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${exported.filename}"`);
-    res.send(exported.content);
+    return res.send(exported.content);
   } catch (error) {
     return next(error);
   }
 });
 
-// Generate shareable token
-router.get('/:id/share-token', async (req, res, next) => {
+router.get('/:id/share-token', async (req: AuthenticatedRequest, res, next) => {
   try {
     const session = await SessionModel.findById(req.params.id);
 
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+    if (!ensureSessionAccess(req, res, session)) {
+      return;
     }
 
     if (!session.analysis) {

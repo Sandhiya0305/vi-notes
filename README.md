@@ -205,12 +205,13 @@ npm install
 
 ## Run in Development
 
-Start both the backend and the frontend while automatically opening the client in your browser:
+Start both the backend and the frontend while automatically opening the client in your browser and keeping watchers alive for hot reload (`ts-node-dev` on the server + Vite on the client):
 
 ```bash
-npm run dev:site
+npm run dev
 ```
 
+(The `npm run dev:site` script still points to the same `scripts/dev-open.js` helper if you prefer to keep the dedicated name.)  
 The client runs at `http://localhost:5173`.
 
 If you want to start each workspace manually instead, run `npm run dev -w server` in one terminal and `npm run dev -w client` in another.
@@ -304,7 +305,10 @@ Those signals produce:
 Root:
 
 ```bash
-npm run dev
+npm run dev         # runs the dev:site helper (backend + frontend hot reload)
+npm run dev:site
+npm run dev:server  # backend only hot reload via ts-node-dev
+npm run dev:client  # frontend only hot reload via Vite
 npm run build
 npm run start
 ```

@@ -19,14 +19,14 @@ body {
   background-color: #f7f7f5;
 }
 
+#root {
+  min-height: 100vh;
+}
+
 button,
 input,
 textarea {
   font: inherit;
-}
-
-#root {
-  min-height: 100vh;
 }
 
 .app-shell {
@@ -70,6 +70,15 @@ textarea {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.hero-user {
+  font-size: 0.92rem;
+  color: #4b5563;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #f3f4f6;
 }
 
 .hero-tab {
@@ -153,6 +162,16 @@ textarea {
   border-radius: 16px;
   cursor: pointer;
   transition: 160ms ease;
+}
+
+.workspace-save.danger {
+  background: #dc2626;
+  color: #fefefe;
+  border-color: transparent;
+}
+
+.workspace-save.danger:hover:not(:disabled) {
+  background: #b91c1c;
 }
 
 .workspace-save:hover:not(:disabled) {

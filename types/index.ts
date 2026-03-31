@@ -12,6 +12,30 @@ export type KeyCategory =
 
 export type EditType = 'insert' | 'delete' | 'replace';
 
+export type UserRole = 'admin' | 'user';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: UserRole;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  expiresAt: number;
+  user: AuthUser;
+}
+
 export interface KeystrokeEvent {
   timestamp: number;
   key: string;
@@ -90,6 +114,8 @@ export interface WritingSession {
   _id: string;
   createdAt: string;
   updatedAt: string;
+  ownerId: string;
+  ownerEmail: string;
   documentSnapshot: string;
   keystrokes: KeystrokeEvent[];
   pastes: PasteEvent[];
@@ -135,6 +161,18 @@ export interface EndSessionResponse {
 
 export interface AnalysisResponse {
   report: AuthenticityReport;
+}
+
+export interface ArchivedReport {
+  sessionId: string;
+  userId: string;
+  userEmail: string;
+  generatedAt: string;
+  verdict: Verdict;
+  confidenceScore: number;
+  overallSuspicionScore: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SessionsResponse {

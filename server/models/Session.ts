@@ -58,6 +58,8 @@ const analysisSchema = new Schema<AuthenticityReport>(
 
 const sessionSchema = new Schema(
   {
+    ownerId: { type: String, required: true },
+    ownerEmail: { type: String, required: true },
     documentSnapshot: { type: String, default: '' },
     keystrokes: { type: [keystrokeSchema], default: [] },
     pastes: { type: [pasteSchema], default: [] },
