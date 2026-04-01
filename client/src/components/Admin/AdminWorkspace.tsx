@@ -157,10 +157,10 @@ export default function AdminWorkspace({ onLogout }: AdminWorkspaceProps) {
         <div className="hero-copy-block">
           <p className="eyebrow">Admin control</p>
           <h1>Sessions & comprehensive reports</h1>
-          <p className="hero-copy">
+          {/* <p className="hero-copy">
             All encrypted sessions and archived verdicts are stored for audits.
             Click on any row to view the full report.
-          </p>
+          </p> */}
         </div>
         <div className="hero-actions">
           <span className="admin-user">{user?.email ?? "Signed in user"}</span>
@@ -174,8 +174,8 @@ export default function AdminWorkspace({ onLogout }: AdminWorkspaceProps) {
         <article className="admin-pane admin-pane-full">
           <div className="admin-pane-header">
             <div>
-              <p className="eyebrow">Ultimate Session Table</p>
-              <h2>All Sessions with Metrics</h2>
+              {/* <p className="eyebrow">Ultimate Session Table</p> */}
+              <h2>All Sessions</h2>
             </div>
             <button
               className="workspace-save"
@@ -200,7 +200,7 @@ export default function AdminWorkspace({ onLogout }: AdminWorkspaceProps) {
                   <th>WPM</th>
                   <th>Duration</th>
                   <th>Typing Variance</th>
-                  <th>Clarity</th>
+                  {/* <th>Clarity</th> */}
                   <th>Confidence</th>
                   <th>Naturalness</th>
                   <th>Score</th>
