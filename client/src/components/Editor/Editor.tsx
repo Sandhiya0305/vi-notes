@@ -57,7 +57,6 @@ export default function Editor({
         role="textbox"
         aria-multiline="true"
         data-placeholder={placeholder ?? 'Start writing here.'}
-        style={{ color: '#111827', caretColor: '#111827', backgroundColor: '#ffffff' }}
         suppressContentEditableWarning
         onFocus={onFocus}
         onBlur={onBlur}

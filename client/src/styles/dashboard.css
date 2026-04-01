@@ -1,9 +1,9 @@
 .dashboard-shell {
   padding: 22px;
-  border-radius: 28px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .dashboard-header {
@@ -16,26 +16,26 @@
 
 .dashboard-header h2 {
   margin: 6px 0 0;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
+  color: var(--text-primary);
 }
 
 .dashboard-refresh,
 .session-delete {
-  border: 0;
   border-radius: 999px;
   padding: 10px 14px;
   cursor: pointer;
 }
 
 .dashboard-refresh {
-  background: #ffffff;
-  color: #111827;
-  border: 1px solid #d1d5db;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
 }
 
 .dashboard-empty {
   margin: 0;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .session-list {
@@ -45,18 +45,18 @@
 
 .session-card {
   padding: 16px;
-  border-radius: 20px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
   cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
 }
 
 .session-card:hover,
 .session-card.selected {
   transform: translateY(-2px);
-  border-color: #9ca3af;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .session-card-top {
@@ -71,28 +71,28 @@
   display: inline-flex;
   padding: 6px 10px;
   border-radius: 999px;
-  background: #f9fafb;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
   font-size: 0.8rem;
   font-weight: 700;
 }
 
 .session-delete {
-  background: #ffffff;
-  color: #4b5563;
-  border: 1px solid #d1d5db;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
 }
 
 .session-preview {
   margin: 0 0 14px;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .session-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.82rem;
 }

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import ThemeToggle from '../ThemeToggle/ThemeToggle';
 import { useAuth } from '../../context/AuthContext';
 import type { LoginRequest } from '../../../types';
 import '../../styles/auth.css';
@@ -42,6 +43,9 @@ export default function AuthPage() {
   return (
     <div className="auth-shell">
       <div className="login-section center">
+        <div className="auth-shell__toolbar">
+          <ThemeToggle />
+        </div>
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="login-heading">
             <p className="eyebrow">Vi-Notes</p>
@@ -87,11 +91,6 @@ export default function AuthPage() {
               </>
             )}
           </p>
-          {isRegisterMode && (
-            <p className="register-hint">
-              Writers receive non-admin privileges. Admin accounts must be provisioned separately.
-            </p>
-          )}
         </form>
       </div>
     </div>

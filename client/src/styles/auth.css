@@ -1,6 +1,6 @@
 .auth-shell {
   min-height: 100vh;
-  background: #f3f4f6;
+  background: var(--background);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9,20 +9,28 @@
 
 .login-section {
   max-width: 420px;
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 32px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-md);
   width: 100%;
+  border: 1px solid var(--border);
+}
+
+.auth-shell__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
 }
 
 .login-heading {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   text-align: center;
 }
 
 .login-heading h1 {
   margin: 6px 0 0;
+  color: var(--text-primary);
 }
 
 .login-form {
@@ -33,28 +41,35 @@
 .login-form label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-secondary);
 }
 
 .login-form input {
-  border-radius: 12px;
-  border: 1px solid #d1d5db;
-  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
   font-size: 1rem;
   width: 100%;
-  background: #fafafa;
+  background: var(--surface-soft);
+  color: var(--text-primary);
 }
 
-.login-form button {
+.login-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.login-form button[type='submit'] {
   border-radius: 999px;
-  border: none;
+  border: 1px solid transparent;
   padding: 12px;
-  background: #111827;
-  color: #ffffff;
+  background: var(--text-primary);
+  color: var(--surface);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .login-form button:disabled {
@@ -63,34 +78,27 @@
 }
 
 .auth-error {
-  color: #b91c1c;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  padding: 10px;
-  border-radius: 10px;
+  color: var(--danger);
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
   margin: 4px 0 0;
   font-size: 0.9rem;
 }
 
 .register-link {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   text-align: center;
-  color: #4b5563;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
 .register-link button {
   border: none;
   background: none;
-  color: #111827;
+  color: var(--accent);
   font-weight: 600;
   cursor: pointer;
   padding: 0;
-}
-
-.register-hint {
-  margin: 4px 0 0;
-  text-align: center;
-  font-size: 0.85rem;
-  color: #6b7280;
 }

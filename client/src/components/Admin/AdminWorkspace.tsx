@@ -3,6 +3,7 @@ import { API_BASE } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
 import type { ArchivedReport, WritingSession } from "../../../../types";
 import AdminReportDetail from "./AdminReportDetail";
+import ThemeToggle from "../ThemeToggle/ThemeToggle";
 import "../../styles/admin.css";
 
 interface AdminWorkspaceProps {
@@ -164,6 +165,7 @@ export default function AdminWorkspace({ onLogout }: AdminWorkspaceProps) {
         </div>
         <div className="hero-actions">
           <span className="admin-user">{user?.email ?? "Signed in user"}</span>
+          <ThemeToggle />
           <button className="workspace-save" type="button" onClick={onLogout}>
             Logout
           </button>

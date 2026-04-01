@@ -106,15 +106,15 @@ export default function AdminReportDetail({
           <h2>User Information</h2>
           <div className="admin-report-info-grid">
             <div className="admin-report-info-item">
-              <span className="info-label">Email</span>
+              <span className="info-label">Email </span>
               <span className="info-value">{displaySession.ownerEmail}</span>
             </div>
             <div className="admin-report-info-item">
-              <span className="info-label">Session ID</span>
+              <span className="info-label">Session ID </span>
               <span className="info-value">{displaySession._id}</span>
             </div>
             <div className="admin-report-info-item">
-              <span className="info-label">Created</span>
+              <span className="info-label">Created </span>
               <span className="info-value">
                 {displaySession.createdAt
                   ? new Date(displaySession.createdAt).toLocaleString()
@@ -122,7 +122,7 @@ export default function AdminReportDetail({
               </span>
             </div>
             <div className="admin-report-info-item">
-              <span className="info-label">Status</span>
+              <span className="info-label">Status </span>
               <span className="info-value">{displaySession.status}</span>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function AdminReportDetail({
             {displaySession.documentSnapshot?.trim() ? (
               <p>{displaySession.documentSnapshot}</p>
             ) : (
-              <p className="no-text">No text content available</p>
+              <p className="no-text"> No text content available</p>
             )}
           </div>
         </article>
@@ -145,19 +145,19 @@ export default function AdminReportDetail({
           <h2>Key Metrics</h2>
           <div className="admin-report-metrics-grid">
             <div className="admin-report-metric-card">
-              <span className="metric-label">Words Per Minute (WPM)</span>
+              <span className="metric-label">Words Per Minute (WPM) </span>
               <span className="metric-value">
                 {calculateWPM(displaySession)}
               </span>
             </div>
             <div className="admin-report-metric-card">
-              <span className="metric-label">Duration</span>
+              <span className="metric-label">Duration </span>
               <span className="metric-value">
                 {formatDuration(displaySession.sessionDurationMs)}
               </span>
             </div>
             <div className="admin-report-metric-card">
-              <span className="metric-label">Word Count</span>
+              <span className="metric-label">Word Count </span>
               <span className="metric-value">
                 {displaySession.analysis?.metrics?.wordCount ??
                   (displaySession.documentSnapshot?.trim()
@@ -169,7 +169,7 @@ export default function AdminReportDetail({
               </span>
             </div>
             <div className="admin-report-metric-card">
-              <span className="metric-label">Typing Variance</span>
+              <span className="metric-label">Typing Variance </span>
               <span className="metric-value">
                 {displaySession.analysis?.metrics?.typingVariance?.toFixed(2) ??
                   "N/A"}
@@ -183,19 +183,19 @@ export default function AdminReportDetail({
           <h2>Analysis Scores</h2>
           <div className="admin-report-metrics-grid">
             <div className="admin-report-metric-card">
-              <span className="metric-label">Confidence Score</span>
+              <span className="metric-label">Confidence Score </span>
               <span className="metric-value">
                 {displaySession.analysis?.confidenceScore?.toFixed(2) ?? "N/A"}
               </span>
             </div>
             <div className="admin-report-metric-card">
-              <span className="metric-label">Naturalness Score</span>
+              <span className="metric-label">Naturalness Score </span>
               <span className="metric-value">
                 {displaySession.analysis?.naturalnessScore?.toFixed(2) ?? "N/A"}
               </span>
             </div>
             <div className="admin-report-metric-card">
-              <span className="metric-label">Overall Suspicion Score</span>
+              <span className="metric-label">Overall Suspicion Score </span>
               <span className="metric-value">
                 {displaySession.analysis?.overallSuspicionScore?.toFixed(2) ??
                   "N/A"}
@@ -218,7 +218,7 @@ export default function AdminReportDetail({
             <h2>Text Statistics</h2>
             <div className="admin-report-metrics-grid">
               <div className="admin-report-metric-card">
-                <span className="metric-label">Average Word Length</span>
+                <span className="metric-label">Average Word Length </span>
                 <span className="metric-value">
                   {displaySession.analysis.metrics.textStatistics.averageWordLength?.toFixed(
                     2,
@@ -226,14 +226,14 @@ export default function AdminReportDetail({
                 </span>
               </div>
               <div className="admin-report-metric-card">
-                <span className="metric-label">Sentence Count</span>
+                <span className="metric-label">Sentence Count </span>
                 <span className="metric-value">
                   {displaySession.analysis.metrics.textStatistics
                     .sentenceCount ?? "N/A"}
                 </span>
               </div>
               <div className="admin-report-metric-card">
-                <span className="metric-label">Lexical Diversity</span>
+                <span className="metric-label">Lexical Diversity </span>
                 <span className="metric-value">
                   {displaySession.analysis.metrics.textStatistics.lexicalDiversity?.toFixed(
                     2,
@@ -241,7 +241,7 @@ export default function AdminReportDetail({
                 </span>
               </div>
               <div className="admin-report-metric-card">
-                <span className="metric-label">Lexical Richness</span>
+                <span className="metric-label">Lexical Richness </span>
                 <span className="metric-value">
                   {displaySession.analysis.metrics.textStatistics.lexicalRichness?.toFixed(
                     2,
@@ -266,7 +266,7 @@ export default function AdminReportDetail({
                 </span>
               </div>
               <div className="admin-report-metric-card">
-                <span className="metric-label">Paste Ratio</span>
+                <span className="metric-label">Paste Ratio </span>
                 <span className="metric-value">
                   {displaySession.analysis.metrics.behavioral.pasteRatio
                     ? `${Math.round(displaySession.analysis.metrics.behavioral.pasteRatio * 100)}%`
@@ -274,7 +274,7 @@ export default function AdminReportDetail({
                 </span>
               </div>
               <div className="admin-report-metric-card">
-                <span className="metric-label">Edit Ratio</span>
+                <span className="metric-label">Edit Ratio </span>
                 <span className="metric-value">
                   {displaySession.analysis.metrics.behavioral.editRatio
                     ? `${Math.round(displaySession.analysis.metrics.behavioral.editRatio * 100)}%`
@@ -373,25 +373,25 @@ export default function AdminReportDetail({
           <h2>Session Statistics</h2>
           <div className="admin-report-metrics-grid">
             <div className="admin-report-metric-card">
-              <span className="metric-label">Total Keystrokes</span>
+              <span className="metric-label">Total Keystrokes </span>
               <span className="metric-value">
                 {displaySession.keystrokes?.length ?? 0}
               </span>
             </div>
             <div className="admin-report-metric-card">
-              <span className="metric-label">Total Pastes</span>
+              <span className="metric-label">Total Pastes </span>
               <span className="metric-value">
                 {displaySession.pastes?.length ?? 0}
               </span>
             </div>
             <div className="admin-report-metric-card">
-              <span className="metric-label">Total Edits</span>
+              <span className="metric-label">Total Edits </span>
               <span className="metric-value">
                 {displaySession.edits?.length ?? 0}
               </span>
             </div>
             <div className="admin-report-metric-card">
-              <span className="metric-label">Document Length</span>
+              <span className="metric-label">Document Length </span>
               <span className="metric-value">
                 {displaySession.documentSnapshot?.length ?? 0} chars
               </span>

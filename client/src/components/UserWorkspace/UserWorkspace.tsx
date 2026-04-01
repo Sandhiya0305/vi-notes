@@ -3,6 +3,7 @@ import useKeystrokeTracker from "../../hooks/useKeystrokeTracker";
 import useSessionManager from "../../hooks/useSessionManager";
 import type { WritingSession } from "../../types";
 import { useAuth } from "../../context/AuthContext";
+import ThemeToggle from "../ThemeToggle/ThemeToggle";
 import Editor from "../Editor/Editor";
 import "../../styles/user.css";
 
@@ -166,34 +167,28 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    // Track keydown events for analytics
     tracker.handleKeyDown(event);
   };
 
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
-    // Track paste events for analytics
     tracker.handlePaste(event);
   };
 
   const selectedSession: WritingSession | undefined = safeSessions.find(
     (session) => session._id === selectedSessionId,
   );
-  const displayedSession = selectedSession;
   const displayedReport =
     analysisOpen && selectedSession
       ? selectedSession.analysis ?? currentReport ?? null
       : null;
-  const metrics = displayedReport?.metrics;
-
-  const formatNumber = (value?: number, suffix = "") =>
-    typeof value === "number" ? `${value.toFixed(2)}${suffix}` : "—";
 
   const safeContent = content.trim();
   const wordCount = safeContent.split(/\s+/).filter((chunk) => chunk.length > 0)
     .length;
   const elapsedMs = Math.max(tracker.sessionDurationMs, 0);
   const elapsedMinutes = elapsedMs / 60000;
-  const liveWpm = elapsedMinutes > 0 ? Math.round(wordCount / elapsedMinutes) : 0;
+  const liveWpm =
+    elapsedMinutes > 0 ? Math.round(wordCount / elapsedMinutes) : 0;
   const elapsedSeconds = Math.floor((elapsedMs % 60000) / 1000);
   const durationLabel = `${Math.floor(elapsedMinutes)}m ${elapsedSeconds}s`;
   const sessionSummary = displayedReport;
@@ -205,19 +200,19 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
           100 - Math.min(100, sessionSummary.overallSuspicionScore ?? 0),
         ),
       )}%`
-    : '—';
+    : "—";
   const naturalnessValue =
     sessionSummary?.naturalnessScore != null
       ? Math.round(sessionSummary.naturalnessScore).toString()
-      : '—';
+      : "—";
   const confidenceValue =
     sessionSummary?.confidenceScore != null
       ? Math.round(sessionSummary.confidenceScore).toString()
-      : '—';
+      : "—";
   const scoreValue =
     sessionSummary?.overallSuspicionScore != null
       ? Math.round(sessionSummary.overallSuspicionScore).toString()
-      : '—';
+      : "—";
 
   return (
     <div className="writer-dashboard">
@@ -225,12 +220,10 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
         <div>
           <p className="label">Vi-Notes</p>
           <h1 className="title">Writing analytics</h1>
-          <p className="subtitle">
-            Focused editor with a single insights column.
-          </p>
         </div>
         <div className="header-actions">
           <span className="status-pill">{user?.email ?? "writer"}</span>
+          <ThemeToggle />
           <button className="ghost-btn" onClick={onLogout}>
             Logout
           </button>
@@ -241,7 +234,7 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
         <section className="editor-panel">
           <Editor
             content={content}
-            placeholder="Start writing your thoughts..."
+            placeholder="Start writing..."
             isSessionActive={!!activeSessionId}
             onContentChange={handleContentChange}
             onFocus={handleFocus}
@@ -257,10 +250,6 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
             >
               Analyze Writing
             </button>
-            <p className="helper-text">
-              Writing is tracked live. Save the session whenever you want an
-              updated report.
-            </p>
           </div>
         </section>
 
@@ -281,7 +270,7 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
                 <p className="metric-label">WPM</p>
               </div>
               <div>
-                <p className="big-number text-emerald-500">
+                <p className="big-number">
                   {activeSessionId ? "Live" : "Idle"}
                 </p>
                 <p className="metric-label">Status</p>
@@ -311,9 +300,7 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
                 </div>
               </div>
             ) : (
-              <p className="summary-placeholder">
-                Start typing to activate a session and generate a live analysis.
-              </p>
+              <p className="summary-placeholder">No report selected.</p>
             )}
           </div>
 
@@ -325,7 +312,7 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
                 className="ghost-btn history-toggle-btn"
                 onClick={() => setHistoryCollapsed((prev) => !prev)}
               >
-                {isHistoryCollapsed ? 'Show history' : 'Hide history'}
+                {isHistoryCollapsed ? "Show history" : "Hide history"}
               </button>
             </div>
             {!isHistoryCollapsed && (
@@ -373,7 +360,7 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
                 className="ghost-btn analysis-toggle-btn"
                 onClick={() => setAnalysisOpen((prev) => !prev)}
               >
-                {analysisOpen ? 'Hide report' : 'View report'}
+                {analysisOpen ? "Hide report" : "View report"}
               </button>
             </div>
             {analysisOpen ? (
@@ -383,9 +370,12 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
                     <span
                       className={`analysis-verdict-chip verdict-${displayedReport.verdict?.toLowerCase()}`}
                     >
-                      {displayedReport.verdict.replace(/_/g, ' ')}
+                      {displayedReport.verdict.replace(/_/g, " ")}
                     </span>
-                    <span className="analysis-duration">Generated {new Date(displayedReport.generatedAt).toLocaleString()}</span>
+                    <span className="analysis-duration">
+                      Generated{" "}
+                      {new Date(displayedReport.generatedAt).toLocaleString()}
+                    </span>
                   </div>
                   <div className="analysis-metrics">
                     <div>
@@ -414,20 +404,28 @@ export default function UserWorkspace({ onLogout }: UserWorkspaceProps) {
                       ))}
                     </ul>
                   ) : (
-                    <p className="analysis-empty">
-                      No additional reasons were recorded for this report.
-                    </p>
+                    <p className="analysis-empty">No reasons recorded.</p>
                   )}
                 </div>
               ) : (
-                <p className="analysis-empty">
-                  Select a completed session above to reveal its analysis report.
-                </p>
+                <p className="analysis-empty">Select a completed session.</p>
               )
             ) : (
-              <p className="analysis-empty">Click “View report” to inspect an analysis.</p>
+              <p className="analysis-empty">Report hidden.</p>
             )}
           </div>
+
+          {selectedSessionId ? (
+            <button
+              className="ghost-btn danger-btn"
+              type="button"
+              onClick={() => {
+                void handleDeleteSession(selectedSessionId);
+              }}
+            >
+              Delete selected
+            </button>
+          ) : null}
         </aside>
       </div>
 
