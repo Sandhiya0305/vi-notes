@@ -219,7 +219,7 @@ export default function useSessionManager() {
     }
   }, [token]);
 
-  const endSession = useCallback(async (payload: SyncPayload): Promise<WritingSession | null> => {
+  const endSession = useCallback(async (payload: SyncPayload): Promise<{ session: WritingSession; report: AuthenticityReport } | null> => {
     if (!state.activeSessionId) {
       return null;
     }
@@ -266,7 +266,7 @@ export default function useSessionManager() {
       }));
       resetSyncedLengths();
 
-      return session;
+      return { session, report };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to end session';
       setState((current) => ({ ...current, isLoading: false, error: message }));

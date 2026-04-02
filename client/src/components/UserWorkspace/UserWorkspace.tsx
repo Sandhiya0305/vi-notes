@@ -46,6 +46,7 @@ export default function UserWorkspace({
     null,
   );
   const [content, setContent] = useState("");
+  const [latestReport, setLatestReport] = useState<WritingSession["analysis"] | null>(null);
   const syncTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -119,6 +120,8 @@ export default function UserWorkspace({
       startingSession.current = true;
       try {
         await startSession(nextContent);
+        // Clear previous report when a new session starts
+        setLatestReport(null);
       } catch (startError) {
         console.error("Session start failed", startError);
       } finally {
@@ -153,7 +156,8 @@ export default function UserWorkspace({
           tracker.sessionDurationMs > 0 ? tracker.sessionDurationMs : 0,
       });
 
-      await endSession({
+      // End the session and get the returned session + report
+      const result = await endSession({
         documentSnapshot: content ?? "",
         keystrokes: Array.isArray(tracker.keystrokes) ? tracker.keystrokes : [],
         pastes: Array.isArray(tracker.pastes) ? tracker.pastes : [],
@@ -164,6 +168,11 @@ export default function UserWorkspace({
 
       tracker.reset();
       void refreshSessions();
+
+      // Capture the analysis report
+      if (result?.report) {
+        setLatestReport(result.report);
+      }
     } catch (saveError) {
       console.error("Save session failed", saveError);
     }
@@ -344,28 +353,94 @@ export default function UserWorkspace({
 
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         {/* Editor */}
-        <Card>
-          <CardContent className="pt-6">
-            <Editor
-              content={content}
-              placeholder="Start writing..."
-              isSessionActive={!!activeSessionId}
-              onContentChange={handleContentChange}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-            />
-            <div className="mt-4 flex justify-end">
-              <Button
-                onClick={() => void handleSaveSession()}
-                disabled={!activeSessionId}
-              >
-                Analyze Writing
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardContent className="pt-6">
+              <Editor
+                content={content}
+                placeholder="Start writing..."
+                isSessionActive={!!activeSessionId}
+                onContentChange={handleContentChange}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+              />
+              <div className="mt-4 flex justify-end">
+                <Button
+                  onClick={() => void handleSaveSession()}
+                  disabled={!activeSessionId}
+                >
+                  Analyze Writing
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Analysis report (shown after Analyze Writing) */}
+          {latestReport && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Analysis Report
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <Badge
+                    className="px-3 py-1 text-sm"
+                    variant={
+                      latestReport.verdict?.toLowerCase() === "human"
+                        ? "success"
+                        : latestReport.verdict
+                              ?.toLowerCase()
+                              .includes("assisted")
+                          ? "warning"
+                          : "destructive"
+                    }
+                  >
+                    {latestReport.verdict?.replace(/_/g, " ") ?? "PENDING"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(latestReport.generatedAt).toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-3">
+                  <MetricItem
+                    label="Clarity"
+                    value={`${Math.max(0, Math.round(100 - Math.min(100, latestReport.overallSuspicionScore ?? 0)))}%`}
+                  />
+                  <MetricItem
+                    label="Confidence"
+                    value={Math.round(latestReport.confidenceScore).toString()}
+                  />
+                  <MetricItem
+                    label="Naturalness"
+                    value={Math.round(latestReport.naturalnessScore).toString()}
+                  />
+                  <MetricItem
+                    label="Suspicion"
+                    value={Math.round(latestReport.overallSuspicionScore).toString()}
+                  />
+                </div>
+
+                {latestReport.reasons?.length ? (
+                  <ul className="flex flex-col gap-1.5">
+                    {latestReport.reasons.map((reason) => (
+                      <li
+                        key={reason}
+                        className="rounded-md bg-muted/50 px-3 py-2 text-sm"
+                      >
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Live stats sidebar */}
         <div className="flex flex-col gap-4">
