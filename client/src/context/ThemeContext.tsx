@@ -5,35 +5,34 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from 'react';
+} from "react";
 
-type ThemeMode = 'light' | 'dark';
+type ThemeMode = "light" | "dark";
 
 interface ThemeContextValue {
   theme: ThemeMode;
   toggleTheme: () => void;
 }
 
-const STORAGE_KEY = 'vi-notes-theme';
+const STORAGE_KEY = "vi-notes-theme";
 
 function getSystemTheme(): ThemeMode {
   if (
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-color-scheme: dark)').matches
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
   ) {
-    return 'dark';
+    return "dark";
   }
-
-  return 'light';
+  return "light";
 }
 
 function getInitialTheme(): ThemeMode {
-  if (typeof window === 'undefined') {
-    return 'light';
+  if (typeof window === "undefined") {
+    return "light";
   }
 
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark') {
+  if (stored === "light" || stored === "dark") {
     return stored;
   }
 
@@ -46,27 +45,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.documentElement.style.colorScheme = theme;
+    const root = document.documentElement;
+    root.classList.remove("light", "dark");
+    root.classList.add(theme);
     window.localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return undefined;
     }
 
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = () => {
       const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored !== 'light' && stored !== 'dark') {
-        setTheme(media.matches ? 'dark' : 'light');
+      if (stored !== "light" && stored !== "dark") {
+        setTheme(media.matches ? "dark" : "light");
       }
     };
 
-    media.addEventListener('change', handleChange);
+    media.addEventListener("change", handleChange);
     return () => {
-      media.removeEventListener('change', handleChange);
+      media.removeEventListener("change", handleChange);
     };
   }, []);
 
@@ -74,20 +74,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     () => ({
       theme,
       toggleTheme: () => {
-        setTheme((current) => (current === 'light' ? 'dark' : 'light'));
+        setTheme((current) => (current === "light" ? "dark" : "light"));
       },
     }),
     [theme],
   );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used inside ThemeProvider');
+    throw new Error("useTheme must be used inside ThemeProvider");
   }
-
   return context;
 }

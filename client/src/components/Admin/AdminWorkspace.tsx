@@ -1,16 +1,31 @@
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE } from "../../config/api";
-import { useAuth } from "../../context/AuthContext";
-import type { ArchivedReport, WritingSession } from "../../../../types";
+import { API_BASE } from "@/config/api";
+import { useAuth } from "@/context/AuthContext";
+import type { ArchivedReport, WritingSession } from "@shared/index";
 import AdminReportDetail from "./AdminReportDetail";
-import ThemeToggle from "../ThemeToggle/ThemeToggle";
-import "../../styles/admin.css";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { RefreshCw, Trash2, ChevronDown, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AdminWorkspaceProps {
+  activeView: string;
+  onNavigate: (view: string) => void;
   onLogout: () => void;
 }
 
-export default function AdminWorkspace({ onLogout }: AdminWorkspaceProps) {
+export default function AdminWorkspace({
+  activeView,
+  onNavigate,
+  onLogout,
+}: AdminWorkspaceProps) {
   const { user, token } = useAuth();
   const [sessions, setSessions] = useState<WritingSession[]>([]);
   const [reports, setReports] = useState<ArchivedReport[]>([]);
@@ -19,7 +34,9 @@ export default function AdminWorkspace({ onLogout }: AdminWorkspaceProps) {
   const [selectedSession, setSelectedSession] = useState<WritingSession | null>(
     null,
   );
-  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(
+    null,
+  );
 
   const fetchData = useCallback(async () => {
     if (!token) {
@@ -142,6 +159,22 @@ export default function AdminWorkspace({ onLogout }: AdminWorkspaceProps) {
     setSelectedSession(null);
   };
 
+  // Group sessions by ownerEmail
+  const sessionsByUser = sessions.reduce(
+    (acc, session) => {
+      const email = session.ownerEmail ?? "Unknown";
+      if (!acc[email]) {
+        acc[email] = [];
+      }
+      acc[email].push(session);
+      return acc;
+    },
+    {} as Record<string, WritingSession[]>,
+  );
+
+  const userEmails = Object.keys(sessionsByUser).sort();
+
+  // ─── Detail view ─────────────────────────────────────────────────────────
   if (selectedSession) {
     return (
       <AdminReportDetail
@@ -152,143 +185,332 @@ export default function AdminWorkspace({ onLogout }: AdminWorkspaceProps) {
     );
   }
 
-  return (
-    <div className="admin-shell">
-      <header className="hero admin-hero">
-        <div className="hero-copy-block">
-          <p className="eyebrow">Admin control</p>
-          <h1>Sessions & comprehensive reports</h1>
-          {/* <p className="hero-copy">
-            All encrypted sessions and archived verdicts are stored for audits.
-            Click on any row to view the full report.
-          </p> */}
-        </div>
-        <div className="hero-actions">
-          <span className="admin-user">{user?.email ?? "Signed in user"}</span>
-          <ThemeToggle />
-          <button className="workspace-save" type="button" onClick={onLogout}>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <section className="admin-grid">
-        <article className="admin-pane admin-pane-full">
-          <div className="admin-pane-header">
-            <div>
-              {/* <p className="eyebrow">Ultimate Session Table</p> */}
-              <h2>All Sessions</h2>
-            </div>
-            <button
-              className="workspace-save"
-              type="button"
-              onClick={() => void fetchData()}
-            >
-              Refresh
-            </button>
+  // ─── User Reports view ──────────────────────────────────────────────────
+  if (activeView === "reports") {
+    return (
+      <div className="mx-auto max-w-5xl p-6">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Admin Control
+            </p>
+            <h1 className="text-2xl font-bold tracking-tight">User Reports</h1>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void fetchData()}
+          >
+            <RefreshCw className="mr-2 h-3.5 w-3.5" />
+            Refresh
+          </Button>
+        </div>
 
+        {isLoading ? (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              Loading reports...
+            </CardContent>
+          </Card>
+        ) : userEmails.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              No sessions recorded yet.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {userEmails.map((email) => {
+              const userSessions = sessionsByUser[email];
+              return (
+                <UserReportGroup
+                  key={email}
+                  email={email}
+                  sessions={userSessions}
+                  onSessionClick={handleRowClick}
+                  calculateWPM={calculateWPM}
+                  formatDuration={formatDuration}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ─── All Sessions view (default) ────────────────────────────────────────
+  return (
+    <div className="mx-auto max-w-6xl p-6">
+      {/* Page header */}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+            Admin Control
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight">All Sessions</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            {user?.email ?? "Admin"}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void fetchData()}
+          >
+            <RefreshCw className="mr-2 h-3.5 w-3.5" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Sessions table */}
+      <Card>
+        <CardContent className="pt-6">
           {isLoading ? (
-            <p className="admin-empty">Loading sessions...</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Loading sessions...
+            </p>
           ) : sessions.length === 0 ? (
-            <p className="admin-empty">No sessions recorded yet.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No sessions recorded yet.
+            </p>
           ) : (
-            <div className="table-scroll">
-              <table className="admin-table admin-table-ultimate">
-                <thead>
-                <tr>
-                  <th>User Email</th>
-                  <th>Text Content</th>
-                  <th>WPM</th>
-                  <th>Duration</th>
-                  <th>Typing Variance</th>
-                  {/* <th>Clarity</th> */}
-                  <th>Confidence</th>
-                  <th>Naturalness</th>
-                  <th>Score</th>
-                  <th>Verdict</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-                </thead>
-              <tbody>
-                {sessions.map((session) => (
-                  <tr
-                    key={session._id}
-                    onClick={() => handleRowClick(session)}
-                    className="admin-table-row-clickable"
-                  >
-                      <td className="user-email-cell">{session.ownerEmail}</td>
-                      <td className="text-content-cell">
-                        <p className="session-preview-full">
-                          {session.documentSnapshot?.trim()
-                            ? session.documentSnapshot.slice(0, 150) +
-                              (session.documentSnapshot.length > 150
-                                ? "..."
-                                : "")
-                            : "No text yet"}
-                        </p>
-                      </td>
-                      <td className="metric-cell">{calculateWPM(session)}</td>
-                      <td className="metric-cell">
+            <ScrollArea className="w-full">
+              <div className="min-w-[1100px]">
+                {/* Table header */}
+                <div className="grid grid-cols-[140px_1fr_60px_80px_80px_80px_80px_80px_100px_140px_80px] gap-2 border-b px-1 pb-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <span>User</span>
+                  <span>Content</span>
+                  <span>WPM</span>
+                  <span>Duration</span>
+                  <span>Variance</span>
+                  <span>Confidence</span>
+                  <span>Natural</span>
+                  <span>Score</span>
+                  <span>Verdict</span>
+                  <span>Created</span>
+                  <span>Actions</span>
+                </div>
+
+                {/* Table body */}
+                <div className="flex flex-col">
+                  {sessions.map((session) => (
+                    <button
+                      key={session._id}
+                      type="button"
+                      onClick={() => handleRowClick(session)}
+                      className="grid grid-cols-[140px_1fr_60px_80px_80px_80px_80px_80px_100px_140px_80px] gap-2 border-b px-1 py-3 text-left text-sm transition-colors last:border-b-0 hover:bg-muted/50"
+                    >
+                      <span className="truncate text-muted-foreground">
+                        {session.ownerEmail}
+                      </span>
+                      <span className="truncate">
+                        {session.documentSnapshot?.trim()
+                          ? session.documentSnapshot.slice(0, 80) +
+                            (session.documentSnapshot.length > 80 ? "..." : "")
+                          : "No text yet"}
+                      </span>
+                      <span className="font-medium">
+                        {calculateWPM(session)}
+                      </span>
+                      <span className="text-muted-foreground">
                         {formatDuration(session.sessionDurationMs)}
-                      </td>
-                      <td className="metric-cell">
-                        {session.analysis?.metrics?.typingVariance?.toFixed(
-                          2,
-                        ) ?? "N/A"}
-                      </td>
-                      <td className="metric-cell">
-                        {session.analysis?.metrics?.textStatistics?.sentenceLengthVariation?.toFixed(
-                          2,
-                        ) ?? "N/A"}
-                      </td>
-                      <td className="metric-cell">
-                        {session.analysis?.confidenceScore?.toFixed(2) ?? "N/A"}
-                      </td>
-                      <td className="metric-cell">
-                        {session.analysis?.naturalnessScore?.toFixed(2) ??
+                      </span>
+                      <span className="text-muted-foreground">
+                        {session.analysis?.metrics?.typingVariance?.toFixed(2) ??
                           "N/A"}
-                      </td>
-                      <td className="metric-cell score-cell">
+                      </span>
+                      <span className="text-muted-foreground">
+                        {session.analysis?.confidenceScore?.toFixed(2) ?? "N/A"}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {session.analysis?.naturalnessScore?.toFixed(2) ?? "N/A"}
+                      </span>
+                      <span className="font-medium">
                         {session.analysis?.overallSuspicionScore?.toFixed(2) ??
                           "N/A"}
-                      </td>
-                      <td
-                        className={`verdict-cell verdict-${session.analysis?.verdict?.toLowerCase() ?? "pending"}`}
-                      >
-                        {session.analysis?.verdict ?? "pending"}
-                      </td>
-                      <td className="date-cell">
+                      </span>
+                      <span>
+                        <Badge
+                          variant={
+                            session.analysis?.verdict?.toLowerCase() === "human"
+                              ? "success"
+                              : session.analysis?.verdict
+                                    ?.toLowerCase()
+                                    .includes("assisted")
+                                ? "warning"
+                                : session.analysis?.verdict
+                                    ?.toLowerCase()
+                                    .includes("generated")
+                                  ? "destructive"
+                                  : "secondary"
+                          }
+                        >
+                          {session.analysis?.verdict ?? "pending"}
+                        </Badge>
+                      </span>
+                      <span className="text-xs text-muted-foreground">
                         {session.createdAt
                           ? new Date(session.createdAt).toLocaleString()
                           : "Unknown"}
-                      </td>
-                      <td className="actions-cell">
-                        <button
-                          type="button"
-                          className="workspace-save danger"
+                      </span>
+                      <span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
                           onClick={(event) => {
                             event.stopPropagation();
                             void handleDeleteSession(session._id);
                           }}
                           disabled={deletingSessionId === session._id}
                         >
-                          {deletingSessionId === session._id
-                            ? "Deleting..."
-                            : "Delete"}
-                        </button>
-                      </td>
-                  </tr>
-                ))}
-              </tbody>
-              </table>
-            </div>
+                          {deletingSessionId === session._id ? (
+                            "..."
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </ScrollArea>
           )}
-        </article>
-      </section>
+        </CardContent>
+      </Card>
 
-      {error ? <p className="admin-error">{error}</p> : null}
+      {error && (
+        <div className="mt-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
     </div>
+  );
+}
+
+// ─── User Report Group (collapsible accordion) ──────────────────────────
+
+interface UserReportGroupProps {
+  email: string;
+  sessions: WritingSession[];
+  onSessionClick: (session: WritingSession) => void;
+  calculateWPM: (session: WritingSession) => number;
+  formatDuration: (ms: number) => string;
+}
+
+function UserReportGroup({
+  email,
+  sessions,
+  onSessionClick,
+  calculateWPM,
+  formatDuration,
+}: UserReportGroupProps) {
+  const [open, setOpen] = useState(false);
+
+  const analyzedCount = sessions.filter((s) => s.analysis).length;
+  const humanCount = sessions.filter(
+    (s) => s.analysis?.verdict?.toLowerCase() === "human",
+  ).length;
+  const flaggedCount = sessions.filter(
+    (s) =>
+      s.analysis?.verdict?.toLowerCase().includes("assisted") ||
+      s.analysis?.verdict?.toLowerCase().includes("generated"),
+  ).length;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/50"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">{email}</p>
+                <p className="text-xs text-muted-foreground">
+                  {sessions.length} session{sessions.length !== 1 ? "s" : ""}
+                  {analyzedCount > 0 && (
+                    <>
+                      {" "}
+                      &middot; {humanCount} human
+                      {flaggedCount > 0 && <> &middot; {flaggedCount} flagged</>}
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform",
+                open && "rotate-180",
+              )}
+            />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="border-t px-4 pb-3 pt-1">
+            <div className="flex flex-col gap-1.5 pt-2">
+              {sessions.map((session) => (
+                <button
+                  key={session._id}
+                  type="button"
+                  onClick={() => onSessionClick(session)}
+                  className="flex items-center justify-between rounded-md px-3 py-2.5 text-left transition-colors hover:bg-accent/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant={
+                        session.analysis?.verdict?.toLowerCase() === "human"
+                          ? "success"
+                          : session.analysis?.verdict
+                                ?.toLowerCase()
+                                .includes("assisted")
+                            ? "warning"
+                            : session.analysis?.verdict
+                                ?.toLowerCase()
+                                .includes("generated")
+                              ? "destructive"
+                              : "secondary"
+                      }
+                    >
+                      {session.analysis?.verdict ?? "pending"}
+                    </Badge>
+                    <span className="text-sm">
+                      {session.documentSnapshot?.trim()
+                        ? session.documentSnapshot.slice(0, 60) +
+                          (session.documentSnapshot.length > 60 ? "..." : "")
+                        : "No text"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span>{calculateWPM(session)} WPM</span>
+                    <span>{formatDuration(session.sessionDurationMs)}</span>
+                    <span>
+                      {session.createdAt
+                        ? new Date(session.createdAt).toLocaleDateString()
+                        : "—"}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }

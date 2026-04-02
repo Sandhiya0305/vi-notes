@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { API_BASE } from '../config/api';
-import type { AuthUser, LoginRequest, RegisterRequest } from '../../types';
+import type { AuthUser, LoginRequest, RegisterRequest } from "@shared/index";
 
 interface AuthState {
   user: AuthUser | null;
