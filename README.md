@@ -1,130 +1,244 @@
 # Vi-Notes
 
-**Vi-Notes** is an authenticity verification platform designed to distinguish genuine human-written content from AI-generated or AI-assisted text. The system focuses on analyzing **writing behavior** alongside **statistical and linguistic characteristics** of the text to establish reliable authorship verification.
+> AI authorship verification platform that detects whether writing is human-authored, AI-assisted, or AI-generated through behavior tracking, text analysis, and MongoDB-backed reports.
 
-This repository represents the **design and conceptual foundation** for the Vi-Notes system.
+## Overview
 
----
+Vi-Notes tracks how people write, not just what they write. It captures keystroke timing, paste events, edit patterns, and text statistics, then combines them into a report that classifies a session as `HUMAN`, `AI_ASSISTED`, or `AI_GENERATED`.
 
-## Motivation
+Current capabilities:
 
-With the widespread availability of AI writing tools, verifying true human authorship has become increasingly challenging. Most existing detection methods rely primarily on textual analysis, which can be inconsistent and easy to bypass.
+- Writer login and registration with JWT auth
+- Tracked writing editor with keystrokes, pastes, edits, and active typing duration
+- Session sync every 900ms while typing
+- Server-side analysis with behavioral scoring, text statistics, correlation checks, and suspicious segment detection
+- Report export in `json`, `html`, and `text` formats
+- Shareable report tokens
+- Admin views for all sessions, grouped user reports, and detailed report drill-downs
 
-Vi-Notes approaches this problem by combining:
-- Behavioral signals from the writing process
-- Statistical analysis of the written content
-- Correlation between how content is written and what is written
+## Features
 
----
+### Writer Experience
 
-## Core Idea
+- Login and registration with role-based access
+- Editor with real-time tracking of typing, paste, and edit events
+- Session creation, sync, end, and manual refresh flows
+- Session list and detailed session view
 
-Human writing naturally includes:
-- Variable typing speeds
-- Pauses during thinking
-- Revisions during idea formation
-- Irregular sentence structures
-- A relationship between content complexity and editing frequency
+### Analysis Pipeline
 
-AI-generated or pasted text often lacks these behavioral signatures.
+- Behavioral scoring based on typing variance, paste ratio, edit ratio, and pause patterns
+- Text statistics including word count, sentence variation, lexical diversity, and lexical richness
+- Correlation checks that compare writing behavior with text complexity
+- Suspicious segment detection for templated phrases, tone shifts, and overly polished text
+- Verdict generation with confidence and suspicion scores
 
-Vi-Notes is designed to capture and analyze these characteristics to assess authorship authenticity.
+### Reporting and Admin
 
----
+- Detailed analysis reports stored in MongoDB
+- Export support for JSON, HTML, and text formats
+- Shareable report tokens
+- Admin dashboard with all sessions and grouped user reports
+- Full report drill-down with metrics, reasons, and suspicious segments
 
-## Key Features
-
-### Writing Session Monitoring
-- Capture keystroke timing metadata (not raw key content)
-- Track pauses, deletions, edits, and writing flow
-- Detect pasted or externally inserted text blocks
-
-### Behavioral Pattern Analysis
-- Pause distribution before sentences and paragraphs
-- Typing speed variance
-- Revision frequency relative to text complexity
-- Micro-pauses around punctuation and structural boundaries
-
-### Textual Statistical Analysis
-- Sentence length variation
-- Vocabulary diversity metrics
-- Stylistic consistency analysis
-- Linguistic irregularities typical of human writing
-
-### Cross-Verification Engine
-- Correlate keyboard behavior with text evolution
-- Identify mismatches between behavioral data and content
-- Flag suspicious uniformity patterns
-
-### Authenticity Reports
-- Confidence score for human authorship
-- Highlighted suspicious segments
-- Supporting behavioral and textual indicators
-- Shareable verification summaries
-
----
-
-## Tech Stack (MERN Architecture)
+## Tech Stack
 
 ### Frontend
-- React
-- TypeScript
-- Electron for desktop-level keyboard event access
+
+| Technology     | Purpose                         |
+| -------------- | ------------------------------- |
+| React 18       | UI framework                    |
+| TypeScript 5   | Type safety                     |
+| Vite 4         | Dev server and build tool       |
+| Tailwind CSS 3 | Utility-first styling           |
+| shadcn/ui      | Accessible component primitives |
+| Lucide React   | Icon library                    |
 
 ### Backend
-- Node.js
-- Express.js
-- RESTful APIs for session handling and analysis
 
-### Database
-- MongoDB
-- Encrypted storage for writing sessions, keystroke metadata, and reports
+| Technology   | Purpose            |
+| ------------ | ------------------ |
+| Node.js      | Runtime            |
+| Express 4    | HTTP server        |
+| TypeScript 5 | Type safety        |
+| MongoDB      | Database           |
+| Mongoose 7   | ODM                |
+| Zod          | Request validation |
+| Custom JWT   | Auth tokens        |
+| PBKDF2       | Password hashing   |
 
-### Machine Learning
-- TensorFlow / PyTorch
-- Supervised learning for human vs AI-assisted writing
-- Unsupervised anomaly detection
-- NLP-based statistical signature analysis
+## Architecture
 
----
+```mermaid
+flowchart LR
+  Browser["Browser"] --> Client["Client: React + Vite"]
 
-## Privacy & Ethics
+  Client --> AuthPage["AuthPage"]
+  Client --> Layout["AppLayout"]
 
-Vi-Notes is designed with privacy-first principles:
+  Layout --> UserWorkspace["UserWorkspace"]
+  Layout --> AdminWorkspace["AdminWorkspace"]
 
-- No storage of raw keystroke content
-- Only timing, frequency, and structural metadata is collected
-- Encrypted data storage
-- User-controlled session tracking
-- Monitoring limited strictly to active writing sessions
+  UserWorkspace --> Editor["Editor"]
+  UserWorkspace --> KeystrokeTracker["useKeystrokeTracker"]
+  UserWorkspace --> SessionManager["useSessionManager"]
 
----
+  AdminWorkspace --> AdminReportDetail["AdminReportDetail"]
 
-## Project Goals
+  UserWorkspace --> API["Express API"]
+  AdminWorkspace --> API
+  AuthPage --> API
 
-- Restore trust in written content authenticity
-- Differentiate between human-written, AI-assisted, and AI-generated text
-- Adapt detection methods as AI writing tools evolve
-- Maintain ethical, transparent, and privacy-conscious verification
+  subgraph Server["Server: Express + TypeScript"]
+    API --> AuthRoutes["/api/auth"]
+    API --> SessionRoutes["/api/sessions"]
+    API --> AnalysisRoutes["/api/analysis"]
+    API --> ReportRoutes["/api/reports"]
 
----
+    AuthRoutes --> AuthServices["JWT auth + password hashing + seed users"]
+    SessionRoutes --> SessionServices["Session CRUD + export + share tokens"]
+    AnalysisRoutes --> AnalysisServices["Behavioral analysis + text statistics + correlation + suspicious segments"]
+    ReportRoutes --> ReportServices["Archived report access"]
 
-## Repository Scope
+    AuthServices --> Mongo[(MongoDB)]
+    SessionServices --> Mongo
+    AnalysisServices --> Mongo
+    ReportServices --> Mongo
+  end
+```
 
-This repository currently serves as:
-- A design reference
-- A research and experimentation space
-- A foundation for future MERN-based implementation
+The server connects to MongoDB during startup and seeds initial users before listening for requests.
 
----
+## Project Structure
 
-## Contributing
+```
+vi-notes/
+├── package.json        # Root workspace scripts
+├── client/             # React frontend
+├── server/             # Express backend
+├── types/              # Shared TypeScript contracts
+└── README.md
+```
 
-Contributions are welcome, especially for **feature requests and their implementation**.  
-If you are interested in working on an existing feature request or proposing a new one, please open or comment on an issue to start the discussion.
+## Getting Started
 
----
+### Prerequisites
 
-## License
+- Node.js 18+
+- MongoDB, either local or MongoDB Atlas
+- npm with workspace support
 
-This project is licensed under the MIT License.
+### Install
+
+```bash
+git clone <repo-url>
+cd vi-notes
+npm install
+cp .env.example .env
+```
+
+Update `.env` with your MongoDB URI and secrets before starting the app.
+
+### Run
+
+```bash
+npm run dev
+```
+
+This starts both the server and the client, opens the browser, and requires the server to connect to MongoDB successfully before the app is ready.
+
+### Optional Scripts
+
+```bash
+npm run dev:server
+npm run dev:client
+npm run build
+npm start
+```
+
+## Environment Variables
+
+| Variable                 | Default                              | Description               |
+| ------------------------ | ------------------------------------ | ------------------------- |
+| `PORT`                   | `3001`                               | Server listen port        |
+| `MONGODB_URI`            | `mongodb://127.0.0.1:27017/vi-notes` | MongoDB connection string |
+| `NODE_ENV`               | `development`                        | Environment mode          |
+| `JWT_SECRET`             | `vi-notes-secret`                    | JWT signing secret        |
+| `JWT_EXPIRATION_SECONDS` | `14400`                              | Token TTL in seconds      |
+| `SEED_ADMIN_EMAIL`       | `admin@vi-notes.local`               | Seed admin email          |
+| `SEED_ADMIN_PASSWORD`    | `AdminPass!2026`                     | Seed admin password       |
+| `SEED_USER_EMAIL`        | `writer@vi-notes.local`              | Seed writer email         |
+| `SEED_USER_PASSWORD`     | `WriterPass!2026`                    | Seed writer password      |
+| `VITE_API_URL`           | `http://localhost:3001/api`          | Client API base URL       |
+
+## Available Scripts
+
+### Root
+
+| Script               | Description                                                                   |
+| -------------------- | ----------------------------------------------------------------------------- |
+| `npm run dev`        | Start server and client together, open the browser, stop both if either fails |
+| `npm run dev:server` | Start only the server                                                         |
+| `npm run dev:client` | Start only the client                                                         |
+| `npm run build`      | Build server and client for production                                        |
+| `npm start`          | Start the production server                                                   |
+| `npm test`           | Run workspace tests                                                           |
+
+### Client
+
+| Script            | Description               |
+| ----------------- | ------------------------- |
+| `npm run dev`     | Start the Vite dev server |
+| `npm run build`   | Build the client          |
+| `npm run preview` | Preview the client build  |
+
+### Server
+
+| Script          | Description                                  |
+| --------------- | -------------------------------------------- |
+| `npm run dev`   | Start the TypeScript server with auto-reload |
+| `npm run build` | Compile the server                           |
+| `npm start`     | Run the compiled server                      |
+| `npm test`      | Run server tests                             |
+
+## API Reference
+
+### Authentication
+
+| Method | Endpoint             | Description                     |
+| ------ | -------------------- | ------------------------------- |
+| POST   | `/api/auth/register` | Create an account               |
+| POST   | `/api/auth/login`    | Sign in and receive a JWT token |
+
+### Sessions
+
+| Method | Endpoint                           | Description                                  |
+| ------ | ---------------------------------- | -------------------------------------------- |
+| POST   | `/api/sessions/start`              | Start a writing session                      |
+| POST   | `/api/sessions/update`             | Sync delta events to the session             |
+| POST   | `/api/sessions/end`                | End the session and trigger analysis         |
+| GET    | `/api/sessions`                    | List sessions                                |
+| GET    | `/api/sessions/:id`                | Get a single session                         |
+| DELETE | `/api/sessions/:id`                | Delete a session                             |
+| GET    | `/api/sessions/:id/export/:format` | Export a report as `json`, `html`, or `text` |
+| GET    | `/api/sessions/:id/share-token`    | Generate a shareable token                   |
+
+### Analysis
+
+| Method | Endpoint                   | Description                |
+| ------ | -------------------------- | -------------------------- |
+| POST   | `/api/analysis/:sessionId` | Run analysis for a session |
+
+### Reports
+
+| Method | Endpoint       | Description           |
+| ------ | -------------- | --------------------- |
+| GET    | `/api/reports` | List archived reports |
+
+## Security
+
+- JWT-based authentication
+- Role-based access control for admin and writer users
+- PBKDF2 password hashing
+- MongoDB connection checks on startup
+- Input validation through Zod on API routes

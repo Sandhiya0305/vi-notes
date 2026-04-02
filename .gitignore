@@ -39,3 +39,6 @@ coverage/
 # Temporary files
 *.tmp
 .cache/
+
+# MongoDB (stored locally at C:\mongodb-local)
+mongodb-linux-x86_64-ubuntu2004-*/
