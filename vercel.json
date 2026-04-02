@@ -1,8 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "cd .. && npm run build --prefix=client",
+  "root": ".",
+  "buildCommand": "npm run build --prefix=client",
   "outputDirectory": "client/dist",
-  "installCommand": "cd .. && npm install --prefix=client",
+  "installCommand": "npm install --prefix=client",
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
