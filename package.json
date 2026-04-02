@@ -9,8 +9,7 @@
     "electron"
   ],
   "scripts": {
-    "dev": "npm run dev:site",
-    "dev:site": "node scripts/dev-open.js",
+    "dev": "concurrently -k -n server,client -c green,blue \"npm run dev -w server\" \"npm run dev -w client -- --open\"",
     "dev:server": "npm run dev -w server",
     "dev:client": "npm run dev -w client",
     "build": "npm run build -w server && npm run build -w client",
@@ -18,6 +17,7 @@
     "test": "npm test -w server && npm test -w client"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "typescript": "^5.0.0"
   },
   "dependencies": {
