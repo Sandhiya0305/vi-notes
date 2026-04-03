@@ -1,5 +1,6 @@
 import type { AuthenticityReport, BehavioralMetrics, EditEvent, KeystrokeEvent, PasteEvent, TextStatisticsMetrics, Verdict, WritingSession } from '../../types';
 import TextStatisticsService from './textStatistics';
+import CorrelationEngine from './correlationEngine';
 import SuspiciousSegmentDetector from './suspiciousSegmentDetector';
 
 function round(value: number, decimals = 2): number {
@@ -47,6 +48,33 @@ function getEditRatio(edits: EditEvent[], keystrokes: KeystrokeEvent[]): number 
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+function deriveAssessment(overallSuspicionScore: number): Pick<
+  AuthenticityReport,
+  'verdict' | 'confidenceScore' | 'naturalnessScore'
+> {
+  const naturalnessScore = round(clamp(100 - overallSuspicionScore, 0, 100));
+
+  let verdict: Verdict = 'HUMAN';
+  let confidenceScore = 82;
+
+  if (overallSuspicionScore >= 70) {
+    verdict = 'AI_GENERATED';
+    confidenceScore = round(clamp(65 + (overallSuspicionScore - 70) * 1.1, 65, 98));
+  } else if (overallSuspicionScore >= 38) {
+    verdict = 'AI_ASSISTED';
+    confidenceScore = round(clamp(58 + (overallSuspicionScore - 38) * 0.9, 58, 88));
+  } else {
+    verdict = 'HUMAN';
+    confidenceScore = round(clamp(78 + (30 - overallSuspicionScore) * 0.4, 70, 96));
+  }
+
+  return {
+    verdict,
+    confidenceScore,
+    naturalnessScore,
+  };
 }
 
 function getPauseBeforeSentences(keystrokes: KeystrokeEvent[], documentSnapshot: string): number[] {
@@ -156,13 +184,13 @@ export function analyzeSessionBehavior(session: Pick<WritingSession, '_id' | 'do
     textSuspicion += 3 * Math.min(textStats.linguisticIrregularities.length, 3);
   }
 
-  let overallSuspicionScore = round(clamp(varianceSuspicion + pasteSuspicion + editSuspicion + pausePatternSuspicion + textSuspicion, 0, 100));
-  if (hasLongPasteEvent) {
-    overallSuspicionScore = Math.max(overallSuspicionScore, 70);
-  }
-  if (wordCount > 0 && totalPastedWords / wordCount > 0.5) {
-    overallSuspicionScore = Math.max(overallSuspicionScore, 85);
-  }
+  const baseSuspicionScore = round(
+    clamp(
+      varianceSuspicion + pasteSuspicion + editSuspicion + pausePatternSuspicion + textSuspicion,
+      0,
+      100,
+    ),
+  );
   const reasons: string[] = [];
 
   const heavyPasteEvent = session.pastes.some((paste) => paste.insertedLength / documentLength > 0.4);
@@ -170,7 +198,6 @@ export function analyzeSessionBehavior(session: Pick<WritingSession, '_id' | 'do
 
   if (highPaste) {
     reasons.push('More than 65% of the document arrived through large paste operations.');
-    overallSuspicionScore = Math.max(overallSuspicionScore, 78);
   }
 
   if (hasLongPasteEvent) {
@@ -216,22 +243,6 @@ export function analyzeSessionBehavior(session: Pick<WritingSession, '_id' | 'do
     reasons.push('The document length was reached in a very short session.');
   }
 
-  const naturalnessScore = round(clamp(100 - overallSuspicionScore, 0, 100));
-
-  let verdict: Verdict = 'HUMAN';
-  let confidenceScore = 82;
-
-  if (overallSuspicionScore >= 70) {
-    verdict = 'AI_GENERATED';
-    confidenceScore = round(clamp(65 + (overallSuspicionScore - 70) * 1.1, 65, 98));
-  } else if (overallSuspicionScore >= 38) {
-    verdict = 'AI_ASSISTED';
-    confidenceScore = round(clamp(58 + (overallSuspicionScore - 38) * 0.9, 58, 88));
-  } else {
-    verdict = 'HUMAN';
-    confidenceScore = round(clamp(78 + (30 - overallSuspicionScore) * 0.4, 70, 96));
-  }
-
   const behavioralMetrics: BehavioralMetrics = {
     typingVariance: round(typingVariance),
     averageIntervalMs: round(averageIntervalMs),
@@ -242,13 +253,13 @@ export function analyzeSessionBehavior(session: Pick<WritingSession, '_id' | 'do
     editRatio: round(editRatio, 3),
   };
 
-  const initialReport: AuthenticityReport = {
+  const provisionalAssessment = deriveAssessment(baseSuspicionScore);
+
+  const provisionalReport: AuthenticityReport = {
     sessionId: session._id,
     generatedAt: new Date().toISOString(),
-    verdict,
-    confidenceScore,
-    overallSuspicionScore,
-    naturalnessScore,
+    ...provisionalAssessment,
+    overallSuspicionScore: baseSuspicionScore,
     reasons,
     metrics: {
       typingVariance: round(typingVariance),
@@ -261,12 +272,40 @@ export function analyzeSessionBehavior(session: Pick<WritingSession, '_id' | 'do
     },
   };
 
+  const correlationEngine = new CorrelationEngine();
+  const provisionalCorrelation = correlationEngine.summarize(provisionalReport, textStats);
+  const correlationPenalty = clamp(100 - provisionalCorrelation.correlationScore, 0, 100);
+
+  let overallSuspicionScore = round(
+    clamp(baseSuspicionScore * 0.8 + correlationPenalty * 0.2, 0, 100),
+  );
+
+  if (hasLongPasteEvent) {
+    overallSuspicionScore = Math.max(overallSuspicionScore, 70);
+  }
+  if (wordCount > 0 && totalPastedWords / wordCount > 0.5) {
+    overallSuspicionScore = Math.max(overallSuspicionScore, 85);
+  }
+  if (highPaste) {
+    overallSuspicionScore = Math.max(overallSuspicionScore, 78);
+  }
+
+  const finalAssessment = deriveAssessment(overallSuspicionScore);
+  const finalReport: AuthenticityReport = {
+    ...provisionalReport,
+    ...finalAssessment,
+    overallSuspicionScore,
+  };
+
   // Detect suspicious segments
   const segmentDetector = new SuspiciousSegmentDetector();
-  const suspiciousSegments = segmentDetector.detectSegments(session.documentSnapshot, initialReport);
+  const suspiciousSegments = segmentDetector.detectSegments(session.documentSnapshot, finalReport);
+  
+  const correlation = correlationEngine.summarize(finalReport, textStats);
 
   return {
-    ...initialReport,
+    ...finalReport,
     suspiciousSegments: suspiciousSegments.length > 0 ? suspiciousSegments : undefined,
+    correlation,
   };
 }

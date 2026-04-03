@@ -377,6 +377,35 @@ export default function AdminReportDetail({
               </Card>
             )}
 
+          {displaySession.analysis?.correlation && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Correlation Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+                  {displaySession.analysis.correlation.summary}
+                </div>
+
+                {displaySession.analysis.correlation.correlationFindings
+                  ?.length > 0 && (
+                  <ul className="flex flex-col gap-1.5">
+                    {displaySession.analysis.correlation.correlationFindings.map(
+                      (finding, index) => (
+                        <li
+                          key={`${index}-${finding}`}
+                          className="rounded-md bg-muted/50 px-3 py-2 text-sm"
+                        >
+                          {finding}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Suspicious segments */}
           {displaySession.analysis?.suspiciousSegments &&
             displaySession.analysis.suspiciousSegments.length > 0 && (

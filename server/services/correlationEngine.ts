@@ -1,10 +1,4 @@
-import type { AuthenticityReport, TextStatisticsMetrics } from '../../types';
-
-export interface CorrelationSnapshot {
-  summary: string;
-  correlationFindings: string[];
-  correlationScore: number;
-}
+import type { AuthenticityReport, CorrelationSnapshot, TextStatisticsMetrics } from '../../types';
 
 export default class CorrelationEngine {
   private round(value: number, decimals = 2): number {

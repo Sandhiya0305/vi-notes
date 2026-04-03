@@ -86,6 +86,12 @@ export interface BehavioralMetrics {
   editRatio: number;
 }
 
+export interface CorrelationSnapshot {
+  summary: string;
+  correlationFindings: string[];
+  correlationScore: number;
+}
+
 export interface AnalysisMetrics {
   typingVariance: number;
   averageIntervalMs: number;
@@ -106,7 +112,7 @@ export interface AuthenticityReport {
   reasons: string[];
   metrics: AnalysisMetrics;
   suspiciousSegments?: SuspiciousSegment[];
-  correlationFindings?: string[];
+  correlation?: CorrelationSnapshot;
   exportFormat?: 'json' | 'pdf' | 'html';
 }
 

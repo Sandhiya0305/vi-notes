@@ -45,6 +45,11 @@ const analysisSchema = new Schema<AuthenticityReport>(
     overallSuspicionScore: { type: Number, required: true },
     naturalnessScore: { type: Number, required: true },
     reasons: [{ type: String, required: true }],
+    correlation: {
+      summary: { type: String },
+      correlationFindings: { type: [String], default: undefined },
+      correlationScore: { type: Number },
+    },
     metrics: {
       typingVariance: { type: Number, required: true },
       averageIntervalMs: { type: Number, required: true },

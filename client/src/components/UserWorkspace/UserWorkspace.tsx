@@ -437,6 +437,37 @@ export default function UserWorkspace({
                     ))}
                   </ul>
                 ) : null}
+
+                {latestReport.correlation && (
+                  <div className="rounded-lg border bg-muted/20 p-4">
+                    <h3 className="mb-3 text-sm font-semibold">
+                      Correlation Summary
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {latestReport.correlation.summary}
+                    </p>
+
+                    {latestReport.correlation.correlationFindings?.length ? (
+                      <div className="mt-3 flex flex-col gap-1.5">
+                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                          Correlation Findings
+                        </p>
+                        <ul className="flex flex-col gap-1.5">
+                          {latestReport.correlation.correlationFindings.map(
+                            (finding) => (
+                              <li
+                                key={finding}
+                                className="rounded-md bg-muted/50 px-3 py-2 text-sm"
+                              >
+                                {finding}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -627,6 +658,36 @@ function SessionDetailView({
               </CardContent>
             </Card>
           ) : null}
+
+          {report?.correlation && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Correlation Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-sm text-muted-foreground">
+                    {report.correlation.summary}
+                  </p>
+                </div>
+
+                {report.correlation.correlationFindings?.length ? (
+                  <ul className="flex flex-col gap-1.5">
+                    {report.correlation.correlationFindings.map((finding) => (
+                      <li
+                        key={finding}
+                        className="rounded-md bg-muted/50 px-3 py-2 text-sm"
+                      >
+                        {finding}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Document text */}
           {session.documentSnapshot?.trim() && (
