@@ -10,8 +10,6 @@ export type KeyCategory =
   | 'modifier'
   | 'special';
 
-export type EditType = 'insert' | 'delete' | 'replace';
-
 export type UserRole = 'admin' | 'user';
 
 export interface AuthUser {
@@ -28,12 +26,6 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-}
-
-export interface LoginResponse {
-  token: string;
-  expiresAt: number;
-  user: AuthUser;
 }
 
 export interface KeystrokeEvent {
@@ -53,7 +45,7 @@ export interface PasteEvent {
 
 export interface EditEvent {
   timestamp: number;
-  type: EditType;
+  type: 'insert' | 'delete' | 'replace';
   delta: number;
   documentLength: number;
 }
@@ -92,7 +84,7 @@ export interface CorrelationSnapshot {
   correlationScore: number;
 }
 
-export interface AnalysisMetrics {
+interface AnalysisMetrics {
   typingVariance: number;
   averageIntervalMs: number;
   pasteRatio: number;
@@ -148,10 +140,6 @@ export interface UpdateSessionRequest {
   sessionDurationMs: number;
 }
 
-export interface UpdateSessionResponse {
-  session: WritingSession;
-}
-
 export interface EndSessionRequest {
   sessionId: string;
   documentSnapshot: string;
@@ -159,14 +147,6 @@ export interface EndSessionRequest {
   pastes: PasteEvent[];
   edits: EditEvent[];
   sessionDurationMs: number;
-}
-
-export interface EndSessionResponse {
-  session: WritingSession;
-}
-
-export interface AnalysisResponse {
-  report: AuthenticityReport;
 }
 
 export interface ArchivedReport {
@@ -183,16 +163,4 @@ export interface ArchivedReport {
 
 export interface SessionsResponse {
   sessions: WritingSession[];
-}
-
-export interface DeleteSessionResponse {
-  deletedSessionId: string;
-}
-
-export interface LiveIndicatorState {
-  currentWpm: number;
-  sessionDurationMs: number;
-  naturalnessScore: number;
-  recentPasteDetected: boolean;
-  pasteCount: number;
 }
