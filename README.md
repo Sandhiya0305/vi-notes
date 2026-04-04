@@ -1,136 +1,97 @@
 # Vi-Notes
 
-> AI authorship verification platform that detects whether writing is human-authored, AI-assisted, or AI-generated through behavior tracking, text analysis, and MongoDB-backed reports.
+Vi-Notes is an AI authorship verification platform that records writing behavior, analyzes session data, and stores report history in MongoDB. It includes OTP-based registration, JWT login, role-based writer and admin workspaces, and installable PWA support.
 
-## Overview
+## What This App Does
 
-Vi-Notes tracks how people write, not just what they write. It captures keystroke timing, paste events, edit patterns, and text statistics, then combines them into a report that classifies a session as `HUMAN`, `AI_ASSISTED`, or `AI_GENERATED`.
-
-Current capabilities:
-
-- Writer login and registration with JWT auth
-- First-time registration now uses an OTP verification step before the account is created
-- Verification codes are delivered by email and can be resent during signup
-- Tracked writing editor with keystrokes, pastes, edits, and active typing duration
-- Session sync every 900ms while typing
-- Server-side analysis with behavioral scoring, text statistics, correlation checks, and suspicious segment detection
-- Report export in `json`, `html`, and `text` formats
-- Shareable report tokens
-- Admin views for all sessions, grouped user reports, and detailed report drill-downs
-
-## Features
-
-### Writer Experience
-
-- Login and registration with role-based access
-- Registration flow with one-time verification code before the account becomes active
-- Resend verification code during signup if the first email is delayed or lost
-- Editor with real-time tracking of typing, paste, and edit events
-- Session creation, sync, end, and manual refresh flows
-- Session list and detailed session view
-
-### Analysis Pipeline
-
-- Behavioral scoring based on typing variance, paste ratio, edit ratio, and pause patterns
-- Text statistics including word count, sentence variation, lexical diversity, and lexical richness
-- Correlation checks that compare writing behavior with text complexity
-- Suspicious segment detection for templated phrases, tone shifts, and overly polished text
-- Verdict generation with confidence and suspicion scores
-
-### Reporting and Admin
-
-- Detailed analysis reports stored in MongoDB
-- Export support for JSON, HTML, and text formats
-- Shareable report tokens
-- Admin dashboard with all sessions and grouped user reports
-- Full report drill-down with metrics, reasons, and suspicious segments
+- Lets a user register with email and verify the account with an OTP.
+- Lets a verified user sign in and enter either the writer workspace or the admin workspace.
+- Tracks typing behavior, paste events, edit patterns, and session timing inside the editor.
+- Syncs session data to the server while the user writes.
+- Runs server-side analysis after the session ends.
+- Stores the analysis result as a report with behavioral scoring, text statistics, correlation analysis, suspicious segment detection, and confidence scoring.
+- Lets admins view sessions and grouped user reports, with admin-only records filtered out of user-facing lists.
+- Ships as a PWA that can be installed on supported devices.
 
 ## Tech Stack
 
 ### Frontend
 
-| Technology     | Purpose                         |
-| -------------- | ------------------------------- |
-| React 18       | UI framework                    |
-| TypeScript 5   | Type safety                     |
-| Vite 4         | Dev server and build tool       |
-| Tailwind CSS 3 | Utility-first styling           |
-| shadcn/ui      | Accessible component primitives |
-| Lucide React   | Icon library                    |
+| Technology      | Purpose                                 |
+| --------------- | --------------------------------------- |
+| React 18        | UI framework                            |
+| TypeScript 5    | Type safety                             |
+| Vite 4          | Dev server and bundler                  |
+| vite-plugin-pwa | PWA generation and service worker build |
+| Tailwind CSS 3  | Styling                                 |
+| shadcn/ui       | UI primitives                           |
+| Lucide React    | Icons                                   |
 
 ### Backend
 
-| Technology   | Purpose            |
-| ------------ | ------------------ |
-| Node.js      | Runtime            |
-| Express 4    | HTTP server        |
-| TypeScript 5 | Type safety        |
-| MongoDB      | Database           |
-| Mongoose 7   | ODM                |
-| Zod          | Request validation |
-| Custom JWT   | Auth tokens        |
-| PBKDF2       | Password hashing   |
+| Technology           | Purpose               |
+| -------------------- | --------------------- |
+| Node.js              | Runtime               |
+| Express 4            | HTTP server           |
+| TypeScript 5         | Type safety           |
+| MongoDB + Mongoose 7 | Persistence layer     |
+| Zod                  | Request validation    |
+| JWT                  | Authentication tokens |
+| PBKDF2               | Password hashing      |
 
-## Architecture
+## Workflow
 
 ```mermaid
-flowchart LR
-  Browser["Browser"] --> Client["Client: React + Vite"]
+flowchart TD
+  Start([Open Vi-Notes]) --> LoadApp["Load client in browser"]
+  LoadApp --> AuthChoice{"Have an account?"}
 
-  Client --> AuthPage["AuthPage"]
-  Client --> Layout["AppLayout"]
+  AuthChoice -- No --> Register["Register with email and password"]
+  Register --> OTP["Receive OTP by email"]
+  OTP --> Verify["Verify OTP and create account"]
+  Verify --> Login["Sign in with JWT"]
 
-  Layout --> UserWorkspace["UserWorkspace"]
-  Layout --> AdminWorkspace["AdminWorkspace"]
+  AuthChoice -- Yes --> Login["Sign in with JWT"]
 
-  UserWorkspace --> Editor["Editor"]
-  UserWorkspace --> KeystrokeTracker["useKeystrokeTracker"]
-  UserWorkspace --> SessionManager["useSessionManager"]
+  Login --> Role{"User role"}
+  Role -- Writer --> WriterHome["Writer workspace"]
+  Role -- Admin --> AdminHome["Admin workspace"]
 
-  AdminWorkspace --> AdminReportDetail["AdminReportDetail"]
+  WriterHome --> Editor["Open editor and start writing"]
+  Editor --> Track["Track keystrokes, paste, edits, and timing"]
+  Track --> Sync["Sync session data to the server"]
+  Sync --> EndSession["End the session"]
+  EndSession --> Analyze["Run behavioral analysis and text statistics"]
+  Analyze --> Report["Store report in MongoDB"]
+  Report --> WriterReview["View session details and report results"]
 
-  UserWorkspace --> API["Express API"]
-  AdminWorkspace --> API
-  AuthPage --> API
+  AdminHome --> AdminViews["View sessions and grouped user reports"]
+  AdminViews --> AdminDetail["Open detailed report drill-down"]
 
-  subgraph Server["Server: Express + TypeScript"]
-    API --> AuthRoutes["/api/auth"]
-    API --> SessionRoutes["/api/sessions"]
-    API --> AnalysisRoutes["/api/analysis"]
-    API --> ReportRoutes["/api/reports"]
-
-    AuthRoutes --> AuthServices["JWT auth + password hashing"]
-    SessionRoutes --> SessionServices["Session CRUD + export + share tokens"]
-    AnalysisRoutes --> AnalysisServices["Behavioral analysis + text statistics + correlation + suspicious segments"]
-    ReportRoutes --> ReportServices["Archived report access"]
-
-    AuthServices --> Mongo[(MongoDB)]
-    SessionServices --> Mongo
-    AnalysisServices --> Mongo
-    ReportServices --> Mongo
-  end
+  WriterReview --> Done([Finish])
+  AdminDetail --> Done
 ```
 
-The server connects to MongoDB during startup before listening for requests.
+The server connects to MongoDB before it begins accepting requests.
 
 ## Project Structure
 
 ```
 vi-notes/
-├── package.json        # Root workspace scripts
-├── client/             # React frontend
-├── server/             # Express backend
-├── types/              # Shared TypeScript contracts
+├── client/   # React frontend
+├── server/   # Express backend
+├── types/    # Shared TypeScript contracts
+├── package.json
 └── README.md
 ```
 
-## Getting Started
+## Local Setup
 
 ### Prerequisites
 
-- Node.js 18+
-- MongoDB, either local or MongoDB Atlas
+- Node.js 18 or newer
 - npm with workspace support
+- MongoDB, either local or MongoDB Atlas
 
 ### Install
 
@@ -138,80 +99,84 @@ vi-notes/
 git clone <repo-url>
 cd vi-notes
 npm install
-cp .env.example .env
 ```
 
-On Windows PowerShell you can run:
+Create your environment file:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Update `.env` with your MongoDB URI and secrets before starting the app.
+Then fill in `.env` with your MongoDB, JWT, SMTP, and frontend URLs.
 
-### Run
+### Run in Development
 
 ```bash
 npm run dev
 ```
 
-This starts both the server and the client, opens the browser, and requires the server to connect to MongoDB successfully before the app is ready.
+This starts the server and client together. The backend listens on port 3001 and the client runs on port 5173.
 
 Development URLs:
 
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:3001/api`
-- Backend root `http://localhost:3001` redirects to the frontend in development.
+- Backend root: `http://localhost:3001` redirects to the frontend during development
 
-### Optional Scripts
+### Build and Run Production Locally
 
 ```bash
-npm run dev:server
-npm run dev:client
 npm run build
 npm start
 ```
 
 ## Environment Variables
 
-| Variable                 | Default                              | Description               |
-| ------------------------ | ------------------------------------ | ------------------------- |
-| `PORT`                   | `3001`                               | Server listen port        |
-| `MONGODB_URI`            | `mongodb://127.0.0.1:27017/vi-notes` | MongoDB connection string |
-| `NODE_ENV`               | `development`                        | Environment mode          |
-| `JWT_SECRET`             | `vi-notes-secret`                    | JWT signing secret        |
-| `JWT_EXPIRATION_SECONDS` | `14400`                              | Token TTL in seconds      |
-| `SMTP_HOST`              | -                                    | SMTP server host          |
-| `SMTP_PORT`              | `587`                                | SMTP server port          |
-| `SMTP_USER`              | -                                    | SMTP username             |
-| `SMTP_PASSWORD`          | -                                    | SMTP password             |
-| `SMTP_FROM`              | -                                    | Sender email address      |
-| `SMTP_SECURE`            | `false`                              | Use TLS for SMTP          |
-| `VITE_API_URL`           | `http://localhost:3001/api`          | Client API base URL       |
-| `VITE_DEV_SERVER_URL`    | `http://localhost:5173`              | Frontend dev server URL   |
+### Root / Server
 
-Never commit real credentials to source control. Keep `.env` local and commit only `.env.example`.
+| Variable                 | Default                              | Description                      |
+| ------------------------ | ------------------------------------ | -------------------------------- |
+| `PORT`                   | `3001`                               | Server port in local development |
+| `NODE_ENV`               | `development`                        | Runtime mode                     |
+| `MONGODB_URI`            | `mongodb://127.0.0.1:27017/vi-notes` | MongoDB connection string        |
+| `JWT_SECRET`             | `vi-notes-secret`                    | JWT signing secret               |
+| `JWT_EXPIRATION_SECONDS` | `14400`                              | JWT lifetime in seconds          |
+| `SMTP_HOST`              | -                                    | SMTP host used for OTP emails    |
+| `SMTP_PORT`              | `587`                                | SMTP port                        |
+| `SMTP_USER`              | -                                    | SMTP username                    |
+| `SMTP_PASSWORD`          | -                                    | SMTP password                    |
+| `SMTP_FROM`              | -                                    | Sender email address             |
+| `SMTP_SECURE`            | `false`                              | Use TLS for SMTP                 |
+
+### Client
+
+| Variable              | Default                     | Description             |
+| --------------------- | --------------------------- | ----------------------- |
+| `VITE_API_URL`        | `http://localhost:3001/api` | Client API base URL     |
+| `VITE_DEV_SERVER_URL` | `http://localhost:5173`     | Frontend dev server URL |
+
+Do not commit real credentials. Keep `.env` local and use `.env.example` as the template.
 
 ## Available Scripts
 
 ### Root
 
-| Script               | Description                                                                   |
-| -------------------- | ----------------------------------------------------------------------------- |
-| `npm run dev`        | Start server and client together, open the browser, stop both if either fails |
-| `npm run dev:server` | Start only the server                                                         |
-| `npm run dev:client` | Start only the client                                                         |
-| `npm run build`      | Build server and client for production                                        |
-| `npm start`          | Start the production server                                                   |
-| `npm test`           | Run workspace tests                                                           |
+| Script               | Description                          |
+| -------------------- | ------------------------------------ |
+| `npm run dev`        | Start the server and client together |
+| `npm run dev:server` | Start only the server workspace      |
+| `npm run dev:client` | Start only the client workspace      |
+| `npm run build`      | Build server and client              |
+| `npm start`          | Start the production server          |
+| `npm test`           | Run workspace tests                  |
 
 ### Client
 
-| Script            | Description               |
-| ----------------- | ------------------------- |
-| `npm run dev`     | Start the Vite dev server |
-| `npm run build`   | Build the client          |
-| `npm run preview` | Preview the client build  |
+| Script            | Description                     |
+| ----------------- | ------------------------------- |
+| `npm run dev`     | Start the Vite dev server       |
+| `npm run build`   | Build the client and PWA assets |
+| `npm run preview` | Preview the client build        |
 
 ### Server
 
@@ -226,19 +191,19 @@ Never commit real credentials to source control. Keep `.env` local and commit on
 
 ### Authentication
 
-| Method | Endpoint                    | Description                                   |
-| ------ | --------------------------- | --------------------------------------------- |
-| POST   | `/api/auth/register`        | Start account creation and email an OTP       |
-| POST   | `/api/auth/register/resend` | Resend a fresh OTP for a pending registration |
-| POST   | `/api/auth/register/verify` | Verify the OTP and finish account creation    |
-| POST   | `/api/auth/login`           | Sign in and receive a JWT token               |
+| Method | Endpoint                    | Description                            |
+| ------ | --------------------------- | -------------------------------------- |
+| POST   | `/api/auth/register`        | Start account creation and send an OTP |
+| POST   | `/api/auth/register/resend` | Resend a pending OTP                   |
+| POST   | `/api/auth/register/verify` | Verify the OTP and create the account  |
+| POST   | `/api/auth/login`           | Sign in and receive a JWT token        |
 
 ### Sessions
 
 | Method | Endpoint                           | Description                                  |
 | ------ | ---------------------------------- | -------------------------------------------- |
 | POST   | `/api/sessions/start`              | Start a writing session                      |
-| POST   | `/api/sessions/update`             | Sync delta events to the session             |
+| POST   | `/api/sessions/update`             | Sync session events                          |
 | POST   | `/api/sessions/end`                | End the session and trigger analysis         |
 | GET    | `/api/sessions`                    | List sessions                                |
 | GET    | `/api/sessions/:id`                | Get a single session                         |
@@ -257,6 +222,19 @@ Never commit real credentials to source control. Keep `.env` local and commit on
 | Method | Endpoint       | Description           |
 | ------ | -------------- | --------------------- |
 | GET    | `/api/reports` | List archived reports |
+
+## PWA Notes
+
+- The client includes a manifest and service worker through `vite-plugin-pwa`.
+- Installable icons are already present in `client/public/`.
+- The app should be served over HTTPS in production for full PWA support.
+- PWA install prompts and offline indicators are wired into the UI.
+
+## Deployment Notes
+
+- Use `VITE_API_URL` in the client deployment to point at the live backend API.
+- Set backend environment variables in the backend deployment, not in the client deployment.
+- Vercel does not need a manual `PORT` value in production.
 
 ## Security
 
