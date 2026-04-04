@@ -60,6 +60,7 @@ const sessionSchema = new Schema(
   {
     ownerId: { type: String, required: true },
     ownerEmail: { type: String, required: true },
+    ownerName: { type: String, default: '' },
     documentSnapshot: { type: String, default: '' },
     keystrokes: { type: [keystrokeSchema], default: [] },
     pastes: { type: [pasteSchema], default: [] },

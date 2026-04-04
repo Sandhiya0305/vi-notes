@@ -2,6 +2,7 @@ import { Router, type Response } from 'express';
 import { z } from 'zod';
 import ReportExporter from '../services/reportExporter';
 import SessionModel, { type SessionDocument } from '../models/Session';
+import UserModel from '../models/User';
 import type { EndSessionRequest, StartSessionRequest, UpdateSessionRequest } from '../../types';
 import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
 
@@ -89,9 +90,13 @@ router.post('/start', async (req: AuthenticatedRequest, res, next) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    const owner = await UserModel.findById(req.user.id).select('name').lean();
+    const ownerName = owner?.name?.trim() || 'Unknown User';
+
     const session = await SessionModel.create({
       ownerId: req.user.id,
       ownerEmail: req.user.email,
+      ownerName,
       documentSnapshot: body.documentSnapshot ?? '',
       keystrokes: [],
       pastes: [],
@@ -158,8 +163,44 @@ router.get('/', async (req: AuthenticatedRequest, res, next) => {
   try {
     const query = req.user?.role === 'admin' ? {} : { ownerId: req.user?.id };
     const sessions = await SessionModel.find(query).sort({ createdAt: -1 }).lean();
+
+    if (!Array.isArray(sessions) || sessions.length === 0) {
+      return res.json([]);
+    }
+
+    const ownerIds = Array.from(
+      new Set(
+        sessions
+          .map((session) => session.ownerId)
+          .filter(
+            (ownerId): ownerId is string =>
+              typeof ownerId === 'string' &&
+              ownerId.trim().length > 0 &&
+              ownerId.toLowerCase() !== 'undefined' &&
+              ownerId.toLowerCase() !== 'null',
+          ),
+      ),
+    );
+    const users = ownerIds.length
+      ? await UserModel.find({ _id: { $in: ownerIds } }).select('_id name email').lean()
+      : [];
+
+    const userById = new Map(users.map((u) => [String(u._id), u]));
+
     return res.json(
-      Array.isArray(sessions) ? sessions.map((session) => ({ ...session, _id: String(session._id) })) : [],
+      sessions.map((session) => {
+        const sessionOwner = userById.get(String(session.ownerId));
+        const ownerName =
+          sessionOwner?.name?.trim() ||
+          (typeof session.ownerName === 'string' && session.ownerName.trim()) ||
+          'Unknown User';
+
+        return {
+          ...session,
+          _id: String(session._id),
+          ownerName,
+        };
+      }),
     );
   } catch (error) {
     return next(error);

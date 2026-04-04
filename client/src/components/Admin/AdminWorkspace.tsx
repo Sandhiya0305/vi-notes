@@ -1,24 +1,55 @@
 import { useCallback, useEffect, useState } from "react";
 import { API_BASE } from "@/config/api";
 import { useAuth } from "@/context/AuthContext";
-import type { ArchivedReport, WritingSession } from "@shared/index";
+import type { WritingSession } from "@shared/index";
 import AdminReportDetail from "./AdminReportDetail";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { RefreshCw, Trash2, ChevronDown, Users } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { RefreshCw, Trash2 } from "lucide-react";
 
 interface AdminWorkspaceProps {
   activeView: string;
   onNavigate: (view: string) => void;
   onLogout: () => void;
+}
+
+interface AdminUserRow {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "user";
+  sessionCount: number;
+}
+
+function deriveUsersFromSessions(sessions: WritingSession[]): AdminUserRow[] {
+  const byOwner = new Map<string, AdminUserRow>();
+
+  for (const session of sessions) {
+    const id = session.ownerId || `unknown-${session.ownerEmail || "user"}`;
+    const existing = byOwner.get(id);
+
+    if (!existing) {
+      byOwner.set(id, {
+        id,
+        name: session.ownerName?.trim() || "Unknown User",
+        email: session.ownerEmail || "unknown@example.local",
+        role: "user",
+        sessionCount: 1,
+      });
+      continue;
+    }
+
+    existing.sessionCount += 1;
+    if (!existing.name || existing.name === "Unknown User") {
+      existing.name = session.ownerName?.trim() || existing.name;
+    }
+  }
+
+  return Array.from(byOwner.values()).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
 }
 
 export default function AdminWorkspace({
@@ -28,15 +59,19 @@ export default function AdminWorkspace({
 }: AdminWorkspaceProps) {
   const { user, token } = useAuth();
   const [sessions, setSessions] = useState<WritingSession[]>([]);
-  const [reports, setReports] = useState<ArchivedReport[]>([]);
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<WritingSession | null>(
     null,
   );
+  const [selectedUserIdForReports, setSelectedUserIdForReports] = useState<
+    string | null
+  >(null);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(
     null,
   );
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!token) {
@@ -51,29 +86,43 @@ export default function AdminWorkspace({
     setError(null);
 
     try {
-      const [sessionsResponse, reportsResponse] = await Promise.all([
-        fetch(`${API_BASE}/sessions`, { headers }),
-        fetch(`${API_BASE}/reports`, { headers }),
-      ]);
+      const sessionsResponse = await fetch(`${API_BASE}/sessions`, { headers });
 
       if (!sessionsResponse.ok) {
         throw new Error("Unable to load sessions");
       }
 
-      if (!reportsResponse.ok) {
-        throw new Error("Unable to load reports");
-      }
-
       const sessionsPayload =
         (await sessionsResponse.json()) as WritingSession[];
-      const reportsPayload = (await reportsResponse.json()) as {
-        reports?: ArchivedReport[];
-      };
+      const safeSessions = Array.isArray(sessionsPayload)
+        ? sessionsPayload
+        : [];
 
-      setSessions(Array.isArray(sessionsPayload) ? sessionsPayload : []);
-      setReports(
-        Array.isArray(reportsPayload?.reports) ? reportsPayload.reports : [],
-      );
+      setSessions(safeSessions);
+
+      // Prefer canonical users endpoint, but gracefully fallback to session-derived rows.
+      try {
+        const usersResponse = await fetch(`${API_BASE}/users`, { headers });
+        if (!usersResponse.ok) {
+          setUsers(deriveUsersFromSessions(safeSessions));
+          return;
+        }
+
+        const usersPayload = (await usersResponse.json()) as {
+          users?: AdminUserRow[];
+        };
+
+        const apiUsers = Array.isArray(usersPayload?.users)
+          ? usersPayload.users
+          : [];
+        setUsers(
+          apiUsers.length > 0
+            ? apiUsers
+            : deriveUsersFromSessions(safeSessions),
+        );
+      } catch {
+        setUsers(deriveUsersFromSessions(safeSessions));
+      }
     } catch (fetchError) {
       setError(
         fetchError instanceof Error
@@ -84,6 +133,60 @@ export default function AdminWorkspace({
       setIsLoading(false);
     }
   }, [token]);
+
+  const handleDeleteUser = useCallback(
+    async (targetUser: AdminUserRow) => {
+      if (
+        !window.confirm(
+          `Delete user \"${targetUser.name}\" and all their sessions? This cannot be undone.`,
+        )
+      ) {
+        return;
+      }
+
+      if (!token) {
+        setError("Authentication required to delete users.");
+        return;
+      }
+
+      setDeletingUserId(targetUser.id);
+      try {
+        const response = await fetch(`${API_BASE}/users/${targetUser.id}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          throw new Error(errorBody?.error ?? "Unable to delete user");
+        }
+
+        setUsers((current) => current.filter((u) => u.id !== targetUser.id));
+        setSessions((current) =>
+          current.filter((session) => session.ownerId !== targetUser.id),
+        );
+
+        if (selectedUserIdForReports === targetUser.id) {
+          setSelectedUserIdForReports(null);
+        }
+
+        if (selectedSession?.ownerId === targetUser.id) {
+          setSelectedSession(null);
+        }
+      } catch (deleteError) {
+        setError(
+          deleteError instanceof Error
+            ? deleteError.message
+            : "Failed to delete user",
+        );
+      } finally {
+        setDeletingUserId(null);
+      }
+    },
+    [selectedSession, selectedUserIdForReports, token],
+  );
 
   const handleDeleteSession = useCallback(
     async (sessionId: string) => {
@@ -159,20 +262,17 @@ export default function AdminWorkspace({
     setSelectedSession(null);
   };
 
-  // Group sessions by ownerEmail
-  const sessionsByUser = sessions.reduce(
-    (acc, session) => {
-      const email = session.ownerEmail ?? "Unknown";
-      if (!acc[email]) {
-        acc[email] = [];
-      }
-      acc[email].push(session);
-      return acc;
-    },
-    {} as Record<string, WritingSession[]>,
+  const selectedUserForReports = users.find(
+    (entry) => entry.id === selectedUserIdForReports,
   );
-
-  const userEmails = Object.keys(sessionsByUser).sort();
+  const selectedUserSessions = selectedUserForReports
+    ? sessions
+        .filter((session) => session.ownerId === selectedUserForReports.id)
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
+    : [];
 
   // ─── Detail view ─────────────────────────────────────────────────────────
   if (selectedSession) {
@@ -196,11 +296,7 @@ export default function AdminWorkspace({
             </p>
             <h1 className="text-2xl font-bold tracking-tight">User Reports</h1>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void fetchData()}
-          >
+          <Button variant="outline" size="sm" onClick={() => void fetchData()}>
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
             Refresh
           </Button>
@@ -212,27 +308,156 @@ export default function AdminWorkspace({
               Loading reports...
             </CardContent>
           </Card>
-        ) : userEmails.length === 0 ? (
+        ) : users.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No sessions recorded yet.
+              No users found.
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-col gap-3">
-            {userEmails.map((email) => {
-              const userSessions = sessionsByUser[email];
-              return (
-                <UserReportGroup
-                  key={email}
-                  email={email}
-                  sessions={userSessions}
-                  onSessionClick={handleRowClick}
-                  calculateWPM={calculateWPM}
-                  formatDuration={formatDuration}
-                />
-              );
-            })}
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="pt-6">
+                <ScrollArea className="w-full">
+                  <div className="min-w-[900px]">
+                    <div className="grid grid-cols-[180px_1fr_220px_120px_120px_160px] gap-2 border-b px-1 pb-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                      <span>User ID</span>
+                      <span>Full Name</span>
+                      <span>Email</span>
+                      <span>Sessions</span>
+                      <span>View Reports</span>
+                      <span>Delete</span>
+                    </div>
+
+                    <div className="flex flex-col">
+                      {users
+                        .filter((entry) => entry.role !== "admin")
+                        .map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="grid grid-cols-[180px_1fr_220px_120px_120px_160px] items-center gap-2 border-b px-1 py-3 text-sm last:border-b-0"
+                          >
+                            <span className="truncate text-xs text-muted-foreground">
+                              {entry.id}
+                            </span>
+                            <span className="truncate font-medium">
+                              {entry.name}
+                            </span>
+                            <span className="truncate text-muted-foreground">
+                              {entry.email}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {entry.sessionCount}
+                            </span>
+                            <span>
+                              <Button
+                                size="sm"
+                                variant={
+                                  selectedUserIdForReports === entry.id
+                                    ? "secondary"
+                                    : "outline"
+                                }
+                                onClick={() =>
+                                  setSelectedUserIdForReports(entry.id)
+                                }
+                              >
+                                View
+                              </Button>
+                            </span>
+                            <span>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => void handleDeleteUser(entry)}
+                                title="Delete user and sessions"
+                              >
+                                {deletingUserId === entry.id
+                                  ? "Deleting..."
+                                  : "Delete User"}
+                              </Button>
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {selectedUserForReports && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-base font-semibold">
+                      Session Reports: {selectedUserForReports.name}
+                    </h3>
+                    <span className="text-sm text-muted-foreground">
+                      {selectedUserSessions.length} session
+                      {selectedUserSessions.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  {selectedUserSessions.length === 0 ? (
+                    <p className="py-3 text-sm text-muted-foreground">
+                      No sessions for this user.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {selectedUserSessions.map((session) => (
+                        <button
+                          key={session._id}
+                          type="button"
+                          onClick={() => handleRowClick(session)}
+                          className="flex items-center justify-between rounded-md border px-3 py-2 text-left transition-colors hover:bg-accent/40"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Badge
+                              variant={
+                                session.analysis?.verdict?.toLowerCase() ===
+                                "human"
+                                  ? "success"
+                                  : session.analysis?.verdict
+                                        ?.toLowerCase()
+                                        .includes("assisted")
+                                    ? "warning"
+                                    : session.analysis?.verdict
+                                          ?.toLowerCase()
+                                          .includes("generated")
+                                      ? "destructive"
+                                      : "secondary"
+                              }
+                            >
+                              {session.analysis?.verdict ?? "pending"}
+                            </Badge>
+                            <span className="max-w-[500px] truncate text-sm">
+                              {session.documentSnapshot?.trim()
+                                ? session.documentSnapshot.slice(0, 90) +
+                                  (session.documentSnapshot.length > 90
+                                    ? "..."
+                                    : "")
+                                : "No text"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>{calculateWPM(session)} WPM</span>
+                            <span>
+                              {formatDuration(session.sessionDurationMs)}
+                            </span>
+                            <span>
+                              {session.createdAt
+                                ? new Date(
+                                    session.createdAt,
+                                  ).toLocaleDateString()
+                                : "—"}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
@@ -260,11 +485,7 @@ export default function AdminWorkspace({
           <span className="text-sm text-muted-foreground">
             {user?.email ?? "Admin"}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void fetchData()}
-          >
+          <Button variant="outline" size="sm" onClick={() => void fetchData()}>
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
             Refresh
           </Button>
@@ -325,14 +546,16 @@ export default function AdminWorkspace({
                         {formatDuration(session.sessionDurationMs)}
                       </span>
                       <span className="text-muted-foreground">
-                        {session.analysis?.metrics?.typingVariance?.toFixed(2) ??
-                          "N/A"}
+                        {session.analysis?.metrics?.typingVariance?.toFixed(
+                          2,
+                        ) ?? "N/A"}
                       </span>
                       <span className="text-muted-foreground">
                         {session.analysis?.confidenceScore?.toFixed(2) ?? "N/A"}
                       </span>
                       <span className="text-muted-foreground">
-                        {session.analysis?.naturalnessScore?.toFixed(2) ?? "N/A"}
+                        {session.analysis?.naturalnessScore?.toFixed(2) ??
+                          "N/A"}
                       </span>
                       <span className="font-medium">
                         {session.analysis?.overallSuspicionScore?.toFixed(2) ??
@@ -348,8 +571,8 @@ export default function AdminWorkspace({
                                     .includes("assisted")
                                 ? "warning"
                                 : session.analysis?.verdict
-                                    ?.toLowerCase()
-                                    .includes("generated")
+                                      ?.toLowerCase()
+                                      .includes("generated")
                                   ? "destructive"
                                   : "secondary"
                           }
@@ -395,122 +618,5 @@ export default function AdminWorkspace({
         </div>
       )}
     </div>
-  );
-}
-
-// ─── User Report Group (collapsible accordion) ──────────────────────────
-
-interface UserReportGroupProps {
-  email: string;
-  sessions: WritingSession[];
-  onSessionClick: (session: WritingSession) => void;
-  calculateWPM: (session: WritingSession) => number;
-  formatDuration: (ms: number) => string;
-}
-
-function UserReportGroup({
-  email,
-  sessions,
-  onSessionClick,
-  calculateWPM,
-  formatDuration,
-}: UserReportGroupProps) {
-  const [open, setOpen] = useState(false);
-
-  const analyzedCount = sessions.filter((s) => s.analysis).length;
-  const humanCount = sessions.filter(
-    (s) => s.analysis?.verdict?.toLowerCase() === "human",
-  ).length;
-  const flaggedCount = sessions.filter(
-    (s) =>
-      s.analysis?.verdict?.toLowerCase().includes("assisted") ||
-      s.analysis?.verdict?.toLowerCase().includes("generated"),
-  ).length;
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <Card>
-        <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/50"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">{email}</p>
-                <p className="text-xs text-muted-foreground">
-                  {sessions.length} session{sessions.length !== 1 ? "s" : ""}
-                  {analyzedCount > 0 && (
-                    <>
-                      {" "}
-                      &middot; {humanCount} human
-                      {flaggedCount > 0 && <> &middot; {flaggedCount} flagged</>}
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform",
-                open && "rotate-180",
-              )}
-            />
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="border-t px-4 pb-3 pt-1">
-            <div className="flex flex-col gap-1.5 pt-2">
-              {sessions.map((session) => (
-                <button
-                  key={session._id}
-                  type="button"
-                  onClick={() => onSessionClick(session)}
-                  className="flex items-center justify-between rounded-md px-3 py-2.5 text-left transition-colors hover:bg-accent/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <Badge
-                      variant={
-                        session.analysis?.verdict?.toLowerCase() === "human"
-                          ? "success"
-                          : session.analysis?.verdict
-                                ?.toLowerCase()
-                                .includes("assisted")
-                            ? "warning"
-                            : session.analysis?.verdict
-                                ?.toLowerCase()
-                                .includes("generated")
-                              ? "destructive"
-                              : "secondary"
-                      }
-                    >
-                      {session.analysis?.verdict ?? "pending"}
-                    </Badge>
-                    <span className="text-sm">
-                      {session.documentSnapshot?.trim()
-                        ? session.documentSnapshot.slice(0, 60) +
-                          (session.documentSnapshot.length > 60 ? "..." : "")
-                        : "No text"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span>{calculateWPM(session)} WPM</span>
-                    <span>{formatDuration(session.sessionDurationMs)}</span>
-                    <span>
-                      {session.createdAt
-                        ? new Date(session.createdAt).toLocaleDateString()
-                        : "—"}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
   );
 }

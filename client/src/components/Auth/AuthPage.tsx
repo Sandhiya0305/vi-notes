@@ -5,33 +5,68 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Moon, Sun, FileText } from "lucide-react";
-import type { LoginRequest } from "@shared/index";
+import type {
+  LoginRequest,
+  RegisterRequest,
+  RegisterInitiationResponse,
+} from "@shared/index";
 
-export default function AuthPage() {
+type AuthPageMode = "login" | "register";
+
+interface AuthPageProps {
+  mode: AuthPageMode;
+  onModeChange: (mode: AuthPageMode) => void;
+  onRegistrationInitiated: (
+    email: string,
+    verification: RegisterInitiationResponse,
+  ) => void;
+}
+
+export default function AuthPage({
+  mode,
+  onModeChange,
+  onRegistrationInitiated,
+}: AuthPageProps) {
   const { login, register, error: authError, isLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [credentials, setCredentials] = useState<LoginRequest>({
     email: "",
     password: "",
   });
+  const [name, setName] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"login" | "register">("login");
   const isRegisterMode = mode === "register";
+  const registerPayload: RegisterRequest = {
+    email: credentials.email.trim().toLowerCase(),
+    name: name.trim(),
+    password: credentials.password,
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLocalError(null);
 
-    if (!credentials.email || !credentials.password) {
+    const normalizedEmail = credentials.email.trim().toLowerCase();
+
+    if (!normalizedEmail || !credentials.password) {
       setLocalError("Enter both email and password");
+      return;
+    }
+
+    if (isRegisterMode && !name.trim()) {
+      setLocalError("Please enter your name");
       return;
     }
 
     try {
       if (isRegisterMode) {
-        await register(credentials);
+        const response = await register(registerPayload);
+        onRegistrationInitiated(normalizedEmail, response);
       } else {
-        await login(credentials);
+        await login({
+          email: normalizedEmail,
+          password: credentials.password,
+        });
       }
     } catch (submitError) {
       setLocalError(
@@ -66,7 +101,7 @@ export default function AuthPage() {
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             {isRegisterMode
-              ? "Start tracking your writing behavior"
+              ? "We’ll email a verification code after signup"
               : "Enter your credentials to continue"}
           </p>
         </CardHeader>
@@ -93,6 +128,25 @@ export default function AuthPage() {
                 }
               />
             </div>
+
+            {isRegisterMode && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="name"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Full Name
+                </label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  required={isRegisterMode}
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <label
@@ -139,7 +193,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     className="font-medium text-foreground underline-offset-4 hover:underline"
-                    onClick={() => setMode("login")}
+                    onClick={() => onModeChange("login")}
                   >
                     Sign in
                   </button>
@@ -150,7 +204,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     className="font-medium text-foreground underline-offset-4 hover:underline"
-                    onClick={() => setMode("register")}
+                    onClick={() => onModeChange("register")}
                   >
                     Register
                   </button>

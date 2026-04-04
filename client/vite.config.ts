@@ -11,8 +11,26 @@ export default defineConfig({
     },
   },
   server: {
+    strictPort: true,
     port: 5173,
-    host: '0.0.0.0',
+    host: 'localhost',
+    origin: 'http://localhost:5173',
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+      clientPort: 5173,
+    },
+    headers: {
+      'Cache-Control': 'no-store',
+    },
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
     watch: {
       usePolling: true,
       interval: 1000,

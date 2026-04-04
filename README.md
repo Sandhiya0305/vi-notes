@@ -9,6 +9,8 @@ Vi-Notes tracks how people write, not just what they write. It captures keystrok
 Current capabilities:
 
 - Writer login and registration with JWT auth
+- First-time registration now uses an OTP verification step before the account is created
+- Verification codes are delivered by email and can be resent during signup
 - Tracked writing editor with keystrokes, pastes, edits, and active typing duration
 - Session sync every 900ms while typing
 - Server-side analysis with behavioral scoring, text statistics, correlation checks, and suspicious segment detection
@@ -21,6 +23,8 @@ Current capabilities:
 ### Writer Experience
 
 - Login and registration with role-based access
+- Registration flow with one-time verification code before the account becomes active
+- Resend verification code during signup if the first email is delayed or lost
 - Editor with real-time tracking of typing, paste, and edit events
 - Session creation, sync, end, and manual refresh flows
 - Session list and detailed session view
@@ -95,7 +99,7 @@ flowchart LR
     API --> AnalysisRoutes["/api/analysis"]
     API --> ReportRoutes["/api/reports"]
 
-    AuthRoutes --> AuthServices["JWT auth + password hashing + seed users"]
+    AuthRoutes --> AuthServices["JWT auth + password hashing"]
     SessionRoutes --> SessionServices["Session CRUD + export + share tokens"]
     AnalysisRoutes --> AnalysisServices["Behavioral analysis + text statistics + correlation + suspicious segments"]
     ReportRoutes --> ReportServices["Archived report access"]
@@ -107,7 +111,7 @@ flowchart LR
   end
 ```
 
-The server connects to MongoDB during startup and seeds initial users before listening for requests.
+The server connects to MongoDB during startup before listening for requests.
 
 ## Project Structure
 
@@ -137,6 +141,12 @@ npm install
 cp .env.example .env
 ```
 
+On Windows PowerShell you can run:
+
+```powershell
+Copy-Item .env.example .env
+```
+
 Update `.env` with your MongoDB URI and secrets before starting the app.
 
 ### Run
@@ -146,6 +156,12 @@ npm run dev
 ```
 
 This starts both the server and the client, opens the browser, and requires the server to connect to MongoDB successfully before the app is ready.
+
+Development URLs:
+
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:3001/api`
+- Backend root `http://localhost:3001` redirects to the frontend in development.
 
 ### Optional Scripts
 
@@ -165,11 +181,16 @@ npm start
 | `NODE_ENV`               | `development`                        | Environment mode          |
 | `JWT_SECRET`             | `vi-notes-secret`                    | JWT signing secret        |
 | `JWT_EXPIRATION_SECONDS` | `14400`                              | Token TTL in seconds      |
-| `SEED_ADMIN_EMAIL`       | `admin@vi-notes.local`               | Seed admin email          |
-| `SEED_ADMIN_PASSWORD`    | `AdminPass!2026`                     | Seed admin password       |
-| `SEED_USER_EMAIL`        | `writer@vi-notes.local`              | Seed writer email         |
-| `SEED_USER_PASSWORD`     | `WriterPass!2026`                    | Seed writer password      |
+| `SMTP_HOST`              | -                                    | SMTP server host          |
+| `SMTP_PORT`              | `587`                                | SMTP server port          |
+| `SMTP_USER`              | -                                    | SMTP username             |
+| `SMTP_PASSWORD`          | -                                    | SMTP password             |
+| `SMTP_FROM`              | -                                    | Sender email address      |
+| `SMTP_SECURE`            | `false`                              | Use TLS for SMTP          |
 | `VITE_API_URL`           | `http://localhost:3001/api`          | Client API base URL       |
+| `VITE_DEV_SERVER_URL`    | `http://localhost:5173`              | Frontend dev server URL   |
+
+Never commit real credentials to source control. Keep `.env` local and commit only `.env.example`.
 
 ## Available Scripts
 
@@ -205,10 +226,12 @@ npm start
 
 ### Authentication
 
-| Method | Endpoint             | Description                     |
-| ------ | -------------------- | ------------------------------- |
-| POST   | `/api/auth/register` | Create an account               |
-| POST   | `/api/auth/login`    | Sign in and receive a JWT token |
+| Method | Endpoint                    | Description                                   |
+| ------ | --------------------------- | --------------------------------------------- |
+| POST   | `/api/auth/register`        | Start account creation and email an OTP       |
+| POST   | `/api/auth/register/resend` | Resend a fresh OTP for a pending registration |
+| POST   | `/api/auth/register/verify` | Verify the OTP and finish account creation    |
+| POST   | `/api/auth/login`           | Sign in and receive a JWT token               |
 
 ### Sessions
 
@@ -238,6 +261,8 @@ npm start
 ## Security
 
 - JWT-based authentication
+- OTP-gated registration for first-time users
+- SMTP-delivered verification codes with resend support
 - Role-based access control for admin and writer users
 - PBKDF2 password hashing
 - MongoDB connection checks on startup

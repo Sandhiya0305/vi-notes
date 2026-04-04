@@ -6,9 +6,8 @@ import type {
   UpdateSessionRequest,
   WritingSession,
 } from '../types';
+import { API_BASE } from '../config/api';
 import { useAuth } from '../context/AuthContext';
-
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
 interface SessionManagerState {
   activeSessionId: string | null;

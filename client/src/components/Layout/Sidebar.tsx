@@ -48,14 +48,25 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
   );
 }
 
-export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarProps) {
+export default function Sidebar({
+  activeView,
+  onNavigate,
+  onLogout,
+}: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  const initials = user?.email
-    ? user.email.slice(0, 2).toUpperCase()
-    : "VN";
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : user?.email
+      ? user.email.slice(0, 2).toUpperCase()
+      : "VN";
 
   const isSessionsActive =
     activeView === "sessions" || activeView === "sessionDetail";
@@ -139,7 +150,7 @@ export default function Sidebar({ activeView, onNavigate, onLogout }: SidebarPro
           </Avatar>
           <div className="flex-1 truncate">
             <p className="truncate text-sm font-medium text-sidebar-foreground">
-              {user?.email ?? "User"}
+              {user?.name ?? "User"}
             </p>
             <p className="text-[11px] text-muted-foreground capitalize">
               {user?.role ?? "writer"}

@@ -15,6 +15,7 @@ export type UserRole = 'admin' | 'user';
 export interface AuthUser {
   id: string;
   email: string;
+  name: string;
   role: UserRole;
 }
 
@@ -25,7 +26,26 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   email: string;
+  name: string;
   password: string;
+}
+
+export interface AuthSessionResponse {
+  token: string;
+  expiresAt: number;
+  user: AuthUser;
+}
+
+export interface RegisterInitiationResponse {
+  verificationRequired: true;
+  verificationToken: string;
+  expiresAt: number;
+  message: string;
+}
+
+export interface VerifyRegistrationRequest {
+  verificationToken: string;
+  otpCode: string;
 }
 
 export interface KeystrokeEvent {
@@ -108,6 +128,7 @@ export interface WritingSession {
   updatedAt: string;
   ownerId: string;
   ownerEmail: string;
+  ownerName?: string;
   documentSnapshot: string;
   keystrokes: KeystrokeEvent[];
   pastes: PasteEvent[];
