@@ -42,10 +42,21 @@ async function connectToDatabase(): Promise<void> {
 
 app.use(
   cors({
-    origin: 'https://vi-notes-client-one.vercel.app',
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        origin.includes("vercel.app") ||
+        origin.includes("localhost")
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
+
 app.use(express.json({ limit: '2mb' }));
 
 app.get('/health', (_req, res) => {
