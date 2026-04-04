@@ -1,4 +1,4 @@
-import type { AuthenticityReport, BehavioralMetrics, EditEvent, KeystrokeEvent, PasteEvent, TextStatisticsMetrics, Verdict, WritingSession } from '../../types';
+import type { AuthenticityReport, BehavioralMetrics, EditEvent, KeystrokeEvent, PasteEvent, TextStatisticsMetrics, Verdict, WritingSession } from '../types';
 import TextStatisticsService from './textStatistics';
 import SuspiciousSegmentDetector from './suspiciousSegmentDetector';
 

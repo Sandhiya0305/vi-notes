@@ -1,4 +1,4 @@
-import type { AuthenticityReport, SuspiciousSegment } from '../../types';
+import type { AuthenticityReport, SuspiciousSegment } from '../types';
 
 export default class SuspiciousSegmentDetector {
   /**

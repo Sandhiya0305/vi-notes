@@ -13,13 +13,37 @@ const envPath = path.resolve(__dirname, '../.env');
 dotenv.config({ path: envPath, override: true });
 
 const app = express();
-const port = Number(process.env.PORT ?? 3001);
 const mongoUri = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/vi-notes';
+const frontendOrigin = process.env.FRONTEND_URL ?? process.env.VITE_DEV_SERVER_URL ?? 'http://localhost:5173';
 const clientDevUrl = process.env.VITE_DEV_SERVER_URL ?? 'http://localhost:5173';
+let mongoConnectionPromise: Promise<void> | null = null;
+
+async function connectToDatabase(): Promise<void> {
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  if (!mongoConnectionPromise) {
+    mongoConnectionPromise = mongoose
+      .connect(mongoUri, {
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 10000,
+      })
+      .then(() => {
+        console.log('✔ Connected to MongoDB');
+      })
+      .catch((error) => {
+        mongoConnectionPromise = null;
+        throw error;
+      });
+  }
+
+  await mongoConnectionPromise;
+}
 
 app.use(
   cors({
-    origin: true,
+    origin: frontendOrigin,
     credentials: true,
   })
 );
@@ -65,6 +89,15 @@ app.get('/', (_req, res) => {
   return res.status(404).json({ error: 'Frontend is served separately in development' });
 });
 
+app.use('/api', async (_req, _res, next) => {
+  try {
+    await connectToDatabase();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.use('/api/auth', authRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/analysis', analysisRouter);
@@ -73,40 +106,19 @@ app.use('/api/users', usersRouter);
 
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof Error) {
-    return res.status(400).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 
   return res.status(500).json({ error: 'Internal server error' });
 });
 
-async function startServer(): Promise<void> {
-  try {
-    await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 10000,
-    });
-    console.log('✔ Connected to MongoDB');
-  } catch (mongoError) {
-    console.error('❌ MongoDB connection failed');
-    console.error(`   Tried: ${mongoUri.substring(0, 60)}...`);
-    if (mongoError instanceof Error) {
-      console.error(`   Error: ${mongoError.message}`);
-    }
-    console.error('\n⚠️  Troubleshooting:');
-    console.error('   1. Check MONGODB_URI in .env file');
-    console.error('   2. Verify MongoDB Atlas IP whitelist includes your IP');
-    console.error('   3. Check database credentials');
-    process.exit(1);
+void connectToDatabase().catch((error) => {
+  console.error('❌ MongoDB connection failed');
+  console.error(`   Tried: ${mongoUri.substring(0, 60)}...`);
+  if (error instanceof Error) {
+    console.error(`   Error: ${error.message}`);
   }
-
-  app.listen(port, () => {
-    console.log(`✓ Vi-Notes server listening on http://localhost:${port}`);
-    console.log(`   API endpoint: http://localhost:${port}/api`);
-    console.log(`   Health check: http://localhost:${port}/health`);
-  });
-}
-
-startServer().catch((error) => {
-  console.error('Failed to start server', error);
-  process.exit(1);
 });
+
+export default app;
+export { connectToDatabase };

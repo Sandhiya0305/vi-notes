@@ -12,7 +12,7 @@ import type {
   RegisterInitiationResponse,
   RegisterRequest,
   VerifyRegistrationRequest,
-} from '../../types';
+} from '../types';
 
 const router = Router();
 

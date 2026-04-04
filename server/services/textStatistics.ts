@@ -1,4 +1,4 @@
-import type { TextStatisticsMetrics } from '../../types';
+import type { TextStatisticsMetrics } from '../types';
 
 export default class TextStatisticsService {
   private round(value: number, decimals = 2): number {

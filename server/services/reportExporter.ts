@@ -1,4 +1,4 @@
-import type { AuthenticityReport } from '../../types';
+import type { AuthenticityReport } from '../types';
 
 export interface ExportedReport {
   format: 'json' | 'html' | 'text';

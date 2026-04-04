@@ -1,4 +1,4 @@
-import type { AuthenticityReport, TextStatisticsMetrics } from '../../types';
+import type { AuthenticityReport, TextStatisticsMetrics } from '../types';
 
 export interface CorrelationSnapshot {
   summary: string;

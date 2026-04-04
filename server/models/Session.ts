@@ -1,5 +1,5 @@
 import { Schema, model, type InferSchemaType, type HydratedDocument } from 'mongoose';
-import type { AuthenticityReport } from '../../types';
+import type { AuthenticityReport } from '../types';
 
 const keystrokeSchema = new Schema(
   {

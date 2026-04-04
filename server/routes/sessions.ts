@@ -3,7 +3,7 @@ import { z } from 'zod';
 import ReportExporter from '../services/reportExporter';
 import SessionModel, { type SessionDocument } from '../models/Session';
 import UserModel from '../models/User';
-import type { EndSessionRequest, StartSessionRequest, UpdateSessionRequest } from '../../types';
+import type { EndSessionRequest, StartSessionRequest, UpdateSessionRequest } from '../types';
 import { AuthenticatedRequest, requireAuth } from '../middleware/auth';
 
 const router = Router();
