@@ -14,7 +14,6 @@ dotenv.config({ path: envPath, override: true });
 
 const app = express();
 const mongoUri = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/vi-notes';
-const frontendOrigin = process.env.FRONTEND_URL ?? process.env.VITE_DEV_SERVER_URL ?? 'http://localhost:5173';
 const clientDevUrl = process.env.VITE_DEV_SERVER_URL ?? 'http://localhost:5173';
 let mongoConnectionPromise: Promise<void> | null = null;
 
@@ -43,7 +42,7 @@ async function connectToDatabase(): Promise<void> {
 
 app.use(
   cors({
-    origin: frontendOrigin,
+    origin: 'https://vi-notes-client-one.vercel.app',
     credentials: true,
   })
 );

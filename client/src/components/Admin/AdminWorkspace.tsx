@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE } from "@/config/api";
+import { buildApiUrl } from "@/config/api";
 import { useAuth } from "@/context/AuthContext";
 import type { WritingSession } from "@shared/index";
 import AdminReportDetail from "./AdminReportDetail";
@@ -86,7 +86,9 @@ export default function AdminWorkspace({
     setError(null);
 
     try {
-      const sessionsResponse = await fetch(`${API_BASE}/sessions`, { headers });
+      const sessionsResponse = await fetch(buildApiUrl("sessions"), {
+        headers,
+      });
 
       if (!sessionsResponse.ok) {
         throw new Error("Unable to load sessions");
@@ -102,7 +104,7 @@ export default function AdminWorkspace({
 
       // Prefer canonical users endpoint, but gracefully fallback to session-derived rows.
       try {
-        const usersResponse = await fetch(`${API_BASE}/users`, { headers });
+        const usersResponse = await fetch(buildApiUrl("users"), { headers });
         if (!usersResponse.ok) {
           setUsers(deriveUsersFromSessions(safeSessions));
           return;
@@ -151,7 +153,7 @@ export default function AdminWorkspace({
 
       setDeletingUserId(targetUser.id);
       try {
-        const response = await fetch(`${API_BASE}/users/${targetUser.id}`, {
+        const response = await fetch(buildApiUrl(`users/${targetUser.id}`), {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -201,7 +203,7 @@ export default function AdminWorkspace({
 
       setDeletingSessionId(sessionId);
       try {
-        const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+        const response = await fetch(buildApiUrl(`sessions/${sessionId}`), {
           method: "DELETE",
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),

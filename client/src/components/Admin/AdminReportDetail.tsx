@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { API_BASE } from "@/config/api";
+import { buildApiUrl } from "@/config/api";
 import type { WritingSession } from "@shared/index";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +26,7 @@ export default function AdminReportDetail({
       if (!token) return;
 
       try {
-        const response = await fetch(`${API_BASE}/sessions/${session._id}`, {
+        const response = await fetch(buildApiUrl(`sessions/${session._id}`), {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -189,7 +189,8 @@ export default function AdminReportDetail({
                 <MetricCard
                   label="Confidence"
                   value={
-                    displaySession.analysis?.confidenceScore?.toFixed(2) ?? "N/A"
+                    displaySession.analysis?.confidenceScore?.toFixed(2) ??
+                    "N/A"
                   }
                 />
                 <MetricCard
@@ -202,8 +203,9 @@ export default function AdminReportDetail({
                 <MetricCard
                   label="Suspicion"
                   value={
-                    displaySession.analysis?.overallSuspicionScore?.toFixed(2) ??
-                    "N/A"
+                    displaySession.analysis?.overallSuspicionScore?.toFixed(
+                      2,
+                    ) ?? "N/A"
                   }
                 />
                 <MetricCard
@@ -273,8 +275,11 @@ export default function AdminReportDetail({
                   <MetricCard
                     label="Avg Interval"
                     value={
-                      displaySession.analysis.metrics.behavioral.averageIntervalMs != null
-                        ? displaySession.analysis.metrics.behavioral.averageIntervalMs.toFixed(0) + "ms"
+                      displaySession.analysis.metrics.behavioral
+                        .averageIntervalMs != null
+                        ? displaySession.analysis.metrics.behavioral.averageIntervalMs.toFixed(
+                            0,
+                          ) + "ms"
                         : "N/A"
                     }
                   />
@@ -433,9 +438,7 @@ export default function AdminReportDetail({
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <MetricCard
                   label="Keystrokes"
-                  value={
-                    displaySession.keystrokes?.length?.toString() ?? "0"
-                  }
+                  value={displaySession.keystrokes?.length?.toString() ?? "0"}
                 />
                 <MetricCard
                   label="Pastes"

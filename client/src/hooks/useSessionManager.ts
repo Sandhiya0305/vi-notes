@@ -6,7 +6,7 @@ import type {
   UpdateSessionRequest,
   WritingSession,
 } from '../types';
-import { API_BASE } from '../config/api';
+import { buildApiUrl } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 
 interface SessionManagerState {
@@ -80,7 +80,7 @@ export default function useSessionManager() {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE}/sessions/start`, {
+      const response = await fetch(buildApiUrl('sessions/start'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ export default function useSessionManager() {
       return;
     }
 
-    const response = await fetch(`${API_BASE}/sessions/update`, {
+    const response = await fetch(buildApiUrl('sessions/update'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ export default function useSessionManager() {
   }, [state.activeSessionId, token]);
 
   const analyzeSession = useCallback(async (sessionId: string): Promise<AuthenticityReport> => {
-    const response = await fetch(`${API_BASE}/analysis/${sessionId}`, {
+    const response = await fetch(buildApiUrl(`analysis/${sessionId}`), {
       method: 'POST',
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     });
@@ -191,7 +191,7 @@ export default function useSessionManager() {
 
   const refreshSessions = useCallback(async (): Promise<WritingSession[]> => {
     try {
-      const response = await fetch(`${API_BASE}/sessions`, {
+      const response = await fetch(buildApiUrl('sessions'), {
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });
 
@@ -233,7 +233,7 @@ export default function useSessionManager() {
         sessionId: state.activeSessionId,
       };
 
-      const response = await fetch(`${API_BASE}/sessions/end`, {
+      const response = await fetch(buildApiUrl('sessions/end'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -275,7 +275,7 @@ export default function useSessionManager() {
 
   const deleteSession = useCallback(
     async (sessionId: string): Promise<void> => {
-      const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+      const response = await fetch(buildApiUrl(`sessions/${sessionId}`), {
         method: 'DELETE',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),

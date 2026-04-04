@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { API_BASE } from "../config/api";
+import { buildApiUrl } from "../config/api";
 import type {
   AuthSessionResponse,
   AuthUser,
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState((current) => ({ ...current, isLoading: true, error: null }));
 
       try {
-        const response = await fetch(`${API_BASE}/auth/login`, {
+        const response = await fetch(buildApiUrl("auth/login"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState((current) => ({ ...current, isLoading: true, error: null }));
 
     try {
-      const response = await fetch(`${API_BASE}/auth/register`, {
+      const response = await fetch(buildApiUrl("auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState((current) => ({ ...current, isLoading: true, error: null }));
 
       try {
-        const response = await fetch(`${API_BASE}/auth/register/resend`, {
+        const response = await fetch(buildApiUrl("auth/register/resend"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ verificationToken }),
@@ -202,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState((current) => ({ ...current, isLoading: true, error: null }));
 
       try {
-        const response = await fetch(`${API_BASE}/auth/register/verify`, {
+        const response = await fetch(buildApiUrl("auth/register/verify"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
