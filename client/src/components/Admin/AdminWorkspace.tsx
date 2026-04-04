@@ -6,7 +6,6 @@ import AdminReportDetail from "./AdminReportDetail";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { RefreshCw, Trash2 } from "lucide-react";
 
 interface AdminWorkspaceProps {
@@ -320,7 +319,7 @@ export default function AdminWorkspace({
           <div className="space-y-4">
             <Card>
               <CardContent className="pt-6">
-                <ScrollArea className="w-full">
+                <div className="w-full overflow-x-auto pb-2">
                   <div className="min-w-[900px]">
                     <div className="grid grid-cols-[180px_1fr_220px_120px_120px_160px] gap-2 border-b px-1 pb-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                       <span>User ID</span>
@@ -382,7 +381,7 @@ export default function AdminWorkspace({
                         ))}
                     </div>
                   </div>
-                </ScrollArea>
+                </div>
               </CardContent>
             </Card>
 
@@ -410,10 +409,11 @@ export default function AdminWorkspace({
                           key={session._id}
                           type="button"
                           onClick={() => handleRowClick(session)}
-                          className="flex items-center justify-between rounded-md border px-3 py-2 text-left transition-colors hover:bg-accent/40"
+                          className="flex flex-col gap-2 rounded-md border px-3 py-2 text-left transition-colors hover:bg-accent/40 sm:flex-row sm:items-center sm:justify-between"
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
                             <Badge
+                              className="shrink-0"
                               variant={
                                 session.analysis?.verdict?.toLowerCase() ===
                                 "human"
@@ -431,7 +431,7 @@ export default function AdminWorkspace({
                             >
                               {session.analysis?.verdict ?? "pending"}
                             </Badge>
-                            <span className="max-w-[500px] truncate text-sm">
+                            <span className="min-w-0 flex-1 truncate text-sm">
                               {session.documentSnapshot?.trim()
                                 ? session.documentSnapshot.slice(0, 90) +
                                   (session.documentSnapshot.length > 90
@@ -440,7 +440,7 @@ export default function AdminWorkspace({
                                 : "No text"}
                             </span>
                           </div>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground sm:justify-end">
                             <span>{calculateWPM(session)} WPM</span>
                             <span>
                               {formatDuration(session.sessionDurationMs)}
@@ -506,7 +506,7 @@ export default function AdminWorkspace({
               No sessions recorded yet.
             </p>
           ) : (
-            <ScrollArea className="w-full">
+            <div className="w-full overflow-x-auto pb-2">
               <div className="min-w-[1100px]">
                 {/* Table header */}
                 <div className="grid grid-cols-[140px_1fr_60px_80px_80px_80px_80px_80px_100px_140px_80px] gap-2 border-b px-1 pb-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -609,7 +609,7 @@ export default function AdminWorkspace({
                   ))}
                 </div>
               </div>
-            </ScrollArea>
+            </div>
           )}
         </CardContent>
       </Card>

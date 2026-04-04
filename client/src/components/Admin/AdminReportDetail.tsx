@@ -66,7 +66,7 @@ export default function AdminReportDetail({
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-5xl p-6">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 md:px-8">
         <p className="py-8 text-center text-sm text-muted-foreground">
           Loading full report...
         </p>
@@ -76,31 +76,36 @@ export default function AdminReportDetail({
 
   return (
     <ScrollArea className="h-full">
-      <div className="mx-auto max-w-5xl p-6">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 md:px-8">
         {/* Header */}
-        <div className="mb-6 flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={onBack}>
+        <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="w-full sm:w-auto"
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Detailed Report
             </p>
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl lg:text-3xl">
               Session Analysis
             </h1>
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 sm:gap-5">
           {/* User info */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">User Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <InfoItem label="Email" value={displaySession.ownerEmail} />
                 <InfoItem
                   label="Session ID"
@@ -125,9 +130,9 @@ export default function AdminReportDetail({
               <CardTitle className="text-base">Text Content</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md bg-muted/50 p-4 text-sm leading-relaxed">
+              <div className="rounded-md bg-muted/50 p-3 text-sm leading-relaxed sm:p-4">
                 {displaySession.documentSnapshot?.trim() ? (
-                  <p className="whitespace-pre-wrap">
+                  <p className="whitespace-pre-wrap break-words">
                     {displaySession.documentSnapshot}
                   </p>
                 ) : (
@@ -145,7 +150,7 @@ export default function AdminReportDetail({
               <CardTitle className="text-base">Key Metrics</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
                   label="WPM"
                   value={calculateWPM(displaySession).toString()}
@@ -185,7 +190,7 @@ export default function AdminReportDetail({
               <CardTitle className="text-base">Analysis Scores</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
                   label="Confidence"
                   value={
@@ -227,7 +232,7 @@ export default function AdminReportDetail({
                 <CardTitle className="text-base">Text Statistics</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <MetricCard
                     label="Avg Word Length"
                     value={
@@ -271,7 +276,7 @@ export default function AdminReportDetail({
                 <CardTitle className="text-base">Behavioral Metrics</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <MetricCard
                     label="Avg Interval"
                     value={
@@ -317,9 +322,9 @@ export default function AdminReportDetail({
               <CardTitle className="text-base">Final Verdict</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-6">
                 <Badge
-                  className="px-4 py-1.5 text-sm"
+                  className="w-fit max-w-full px-4 py-1.5 text-sm"
                   variant={
                     displaySession.analysis?.verdict?.toLowerCase() === "human"
                       ? "success"
@@ -332,7 +337,7 @@ export default function AdminReportDetail({
                 >
                   {displaySession.analysis?.verdict ?? "PENDING"}
                 </Badge>
-                <div className="flex gap-6 text-sm text-muted-foreground">
+                <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-6">
                   <span>
                     Confidence:{" "}
                     <strong className="text-foreground">
@@ -372,7 +377,7 @@ export default function AdminReportDetail({
                     {displaySession.analysis.reasons.map((reason, index) => (
                       <li
                         key={index}
-                        className="rounded-md bg-muted/50 px-3 py-2 text-sm"
+                        className="rounded-md bg-muted/50 px-3 py-2 text-sm break-words"
                       >
                         {reason}
                       </li>
@@ -399,7 +404,7 @@ export default function AdminReportDetail({
                           key={index}
                           className="rounded-md border bg-muted/30 p-3"
                         >
-                          <div className="mb-2 flex items-center gap-2">
+                          <div className="mb-2 flex flex-col items-start gap-2 sm:flex-row sm:items-center">
                             <Badge
                               variant={
                                 segment.suspicionLevel === "low"
@@ -411,11 +416,11 @@ export default function AdminReportDetail({
                             >
                               {segment.suspicionLevel.toUpperCase()}
                             </Badge>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground break-words">
                               {segment.reason}
                             </span>
                           </div>
-                          <p className="text-sm italic">
+                          <p className="text-sm italic break-words">
                             &ldquo;{segment.text}&rdquo;
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
@@ -435,7 +440,7 @@ export default function AdminReportDetail({
               <CardTitle className="text-base">Session Statistics</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
                   label="Keystrokes"
                   value={displaySession.keystrokes?.length?.toString() ?? "0"}
@@ -465,22 +470,24 @@ export default function AdminReportDetail({
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex min-w-0 flex-col gap-0.5">
       <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
-      <span className="text-sm font-medium">{value}</span>
+      <span className="text-sm font-medium break-words">{value}</span>
     </div>
   );
 }
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-muted/50 p-3">
+    <div className="min-w-0 rounded-lg bg-muted/50 p-3">
       <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
-      <p className="mt-1 text-xl font-bold">{value}</p>
+      <p className="mt-1 break-words text-lg font-bold sm:text-xl md:text-2xl">
+        {value}
+      </p>
     </div>
   );
 }
